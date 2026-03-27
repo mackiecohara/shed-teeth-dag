@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deciduous Tooth Assay Workflow DAG</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; }
+#app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.header { background: #1e293b; color: white; padding: 10px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; flex-shrink: 0; }
+.header-title { font-size: 14px; font-weight: 700; }
+.header-sub { font-size: 10px; color: #94a3b8; }
+.filters { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.filter-label { font-size: 10px; color: #94a3b8; white-space: nowrap; }
+.filter-btn { padding: 3px 9px; border-radius: 20px; border: 1px solid #475569; background: transparent; color: #cbd5e1; font-size: 10px; cursor: pointer; }
+.filter-btn:hover { background: #334155; }
+.filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
+.filter-btn.active-red { background: #ef4444; border-color: #ef4444; color: white; }
+.filter-btn.active-green { background: #10b981; border-color: #10b981; color: white; }
+.filter-btn.active-gray { background: #64748b; border-color: #64748b; color: white; }
+.legend { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+.legend-item { display: flex; align-items: center; gap: 3px; font-size: 9px; color: #94a3b8; }
+.legend-sq { width: 9px; height: 9px; border-radius: 2px; }
+.legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+.main { display: flex; flex: 1; overflow: hidden; }
+.dag-wrap { flex: 1; overflow: auto; background: #f8fafc; }
+.dag-svg { display: block; }
+.node-g { cursor: pointer; }
+.node-g:hover rect.node-rect { filter: brightness(0.93); }
+.details { width: 300px; flex-shrink: 0; background: white; border-left: 1px solid #e2e8f0; overflow-y: auto; }
+.details-empty { display: flex; align-items: center; justify-content: center; height: 200px; color: #94a3b8; font-size: 12px; text-align: center; padding: 20px; line-height: 1.6; }
+.details-inner { padding: 14px; }
+.d-badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 9px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.03em; }
+.d-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; line-height: 1.35; }
+.d-stage { font-size: 10px; color: #64748b; margin-bottom: 10px; }
+.d-tissues { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.d-tissue { padding: 2px 7px; border-radius: 20px; font-size: 9px; font-weight: 600; }
+.d-section { margin-bottom: 10px; }
+.d-section-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 4px; }
+.d-ref { display: flex; gap: 6px; font-size: 10px; color: #475569; line-height: 1.4; margin-bottom: 5px; }
+.d-ref-num { flex-shrink: 0; width: 14px; height: 14px; border-radius: 50%; background: #6366f1; color: white; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.d-box-blue { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+.d-text { font-size: 11px; line-height: 1.5; color: #374151; }
+.d-box { border-radius: 5px; padding: 7px 9px; font-size: 11px; line-height: 1.5; }
+.d-box-warn { background: #fef3c7; border: 1px solid #fde68a; color: #92400e; }
+.d-box-danger { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+.d-box-green { background: #d1fae5; border: 1px solid #a7f3d0; color: #065f46; }
+.d-box-gray { background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; }
+.d-divider { border: none; border-top: 1px solid #f1f5f9; margin: 10px 0; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const S = {
+  sel: null,          // selected node id
+  tissue: "All",      // tissue filter
+  showOrder: true,    // show ordering edges
+  showIncompat: true, // show incompatibility edges
+  showPair: true,     // show pairing edges
+  hovEdge: null,      // hovered edge index
+};
+
+// ─── GLOBAL HANDLERS (called from onclick attrs) ──────────────────────────────
+function selectNode(id) { S.sel = (S.sel === id) ? null : id; render(); }
+function setTissue(t)    { S.tissue = t; render(); }
+function toggleEdge(t)   { S['show'+t] = !S['show'+t]; render(); }
+function hoverEdge(i)    { S.hovEdge = i; render(); }
+function clearHoverEdge(){ S.hovEdge = null; render(); }
+
+// ─── COLOURS ─────────────────────────────────────────────────────────────────
+const GM = {
+  "Storage":         { fill:"#eef2ff", stroke:"#6366f1", hdr:"#6366f1", text:"#312e81" },
+  "At Acquisition":  { fill:"#fffbeb", stroke:"#f59e0b", hdr:"#f59e0b", text:"#78350f" },
+  "Whole Tooth":     { fill:"#ecfdf5", stroke:"#10b981", hdr:"#10b981", text:"#064e3b" },
+  "Post-Sectioning": { fill:"#eff6ff", stroke:"#3b82f6", hdr:"#3b82f6", text:"#1e3a8a" },
+  "Terminal":        { fill:"#fef2f2", stroke:"#ef4444", hdr:"#ef4444", text:"#7f1d1d" },
+};
+const TM = {
+  "All":      { fill:"#f1f5f9", stroke:"#94a3b8", dot:"#94a3b8" },
+  "Enamel":   { fill:"#f5f3ff", stroke:"#a78bfa", dot:"#a78bfa" },
+  "Dentin":   { fill:"#fff7ed", stroke:"#fb923c", dot:"#fb923c" },
+  "Calculus": { fill:"#f7fee7", stroke:"#84cc16", dot:"#84cc16" },
+  "Pulp":     { fill:"#fdf2f8", stroke:"#ec4899", dot:"#ec4899" },
+  "Cementum": { fill:"#f0f9ff", stroke:"#38bdf8", dot:"#38bdf8" },
+  "Root":     { fill:"#fff7ed", stroke:"#fdba74", dot:"#fdba74" },
+};
+
+// ─── NODES ────────────────────────────────────────────────────────────────────
+const NODES = [
+  // ── STORAGE: permissive → restrictive ──────────────────────────────────────
+  { id:"refrigerated", g:"Storage", label:"Refrigerated (4°C, non-frozen)", t:["All"],
+    stage:"Pre-research holding",
+    consumes:"Nothing — holding condition",
+    preserves:"All tissues",
+    constraint:"Broadly permissive; slows microbial degradation without freeze-thaw risk. Most common short-term holding condition.",
+    pairs:"Any upstream; fine for structural and molecular work" },
+  { id:"frozen", g:"Storage", label:"Frozen (−20 / −80°C)", t:["All"],
+    stage:"Pre-research holding",
+    consumes:"Nothing — holding condition",
+    preserves:"All tissues",
+    constraint:"Best for long-term molecular preservation. Freeze-thaw cycles are the primary risk.",
+    pairs:"Preferred for DNA/RNA targets; fine for structural work" },
+  { id:"ethanol", g:"Storage", label:"70% Ethanol", t:["All"],
+    stage:"Pre-research holding",
+    consumes:"Nothing — some isotopic signals affected",
+    preserves:"All tissues; most mineral work unaffected",
+    constraint:"CAUTION: affects δ¹³C/δ¹⁵N organic signals — avoid if collagen isotope work is planned.",
+    pairs:"Fine for mineral, crystallographic, and enamel work" },
+  { id:"dry", g:"Storage", label:"Dry / Ambient", t:["All"],
+    stage:"Pre-research holding",
+    consumes:"Nothing — but desiccation can cause cracking and mass loss",
+    preserves:"All tissues if handled gently",
+    constraint:"Drying causes cracking; weight and morphometrics must be taken before desiccation. DNA likely degraded in old dry collections.",
+    pairs:"Common in older collections; most structural work still feasible" },
+  { id:"formalin", g:"Storage", label:"Formalin-Fixed", t:["All"],
+    stage:"Pre-research holding",
+    consumes:"FORECLOSES DNA, RNA, and most proteomics",
+    preserves:"Mineral structure; histology",
+    constraint:"Do NOT fix if any molecular work is planned. Formalin fixation is irreversible and broadly forecloses molecular branches.",
+    pairs:"Histomorphometry, SEM, EPMA only" },
+
+  // ── AT ACQUISITION: surface documentation → qlf → calculus removal ─────────
+  { id:"photography", g:"At Acquisition", label:"Photography & Clinical Scoring", t:["All"],
+    stage:"At acquisition — MUST be first",
+    consumes:"Nothing",
+    preserves:"All",
+    constraint:"Must precede any surface alteration, cleaning, or drying. Record hypoplasia, wear, caries, crown morphology on fresh tooth.",
+    pairs:"Weight/morphometrics, 3D scan, QLF — all at-acquisition steps",
+    ref1:"Esposito C et al. (2024). NOthing goes to WAste (NOWA). J Archaeol Sci 171:106087.",
+    ref2:"Buikstra JE & Ubelaker DH (1994). Standards for data collection from human skeletal remains. Arkansas Archeological Survey.",
+    note:"Standard first step; directly applicable to shed deciduous teeth. Fixation or surface cleaning before photography can alter visible surface features." },
+  { id:"weight", g:"At Acquisition", label:"Weight & Linear Morphometrics", t:["All"],
+    stage:"At acquisition — MUST be first",
+    consumes:"Nothing",
+    preserves:"All",
+    constraint:"Weight MUST be measured on fresh/wet tooth before any desiccation — this value cannot be recovered once the tooth dries. Cracks from drying complicate morphometrics.",
+    pairs:"Photography, 3D scan" },
+  { id:"scan3d", g:"At Acquisition", label:"3D Surface Scanning / SfM Photogrammetry", t:["All"],
+    stage:"At acquisition",
+    consumes:"Nothing",
+    preserves:"All",
+    constraint:"Best before any surface alteration. Captures external geometry for morphometric and taphonomic work.",
+    pairs:"Photography, DMTA replica (same session)" },
+  { id:"dmta", g:"At Acquisition", label:"DMTA via High-Resolution Replica", t:["All"],
+    stage:"At acquisition",
+    consumes:"Nothing on tooth — PVS mould + epoxy resin cast",
+    preserves:"All",
+    constraint:"Replica (not tooth) is the working material for microwear analysis. NOWA-confirmed protocol. Best before any surface alteration of crown.",
+    pairs:"3D scan, photography" },
+  { id:"qlf", g:"At Acquisition", label:"Quantitative Fluorescence (QLF)", t:["All"],
+    stage:"At acquisition",
+    consumes:"Nothing — non-destructive",
+    preserves:"All",
+    constraint:"Non-destructive; detects caries, demineralization, cracks via autofluorescence. Flexible in sequencing among at-acquisition steps.",
+    pairs:"Photography, 3D scan",
+    ref1:"Shi XQ et al. (2001). Assessing dental plaque and caries with quantitative light-induced fluorescence. Caries Res 35(3):198–203.",
+    ref2:"Nava A et al. (2022). Virtual histology of archaeological human deciduous prenatal enamel through synchrotron X-ray computed microtomography. J Synchrotron Radiat 29(1):347–253.",
+    note:"QLF on intact teeth uses 405 nm excitation; detects caries, hypomineralisation, and plaque. Applicable to deciduous teeth for screening." },
+  { id:"calculus-removal", g:"At Acquisition", label:"Calculus Removal & Archiving", t:["Calculus"],
+    stage:"At acquisition — AFTER calculus sampling",
+    consumes:"Calculus removed from surface irreversibly",
+    preserves:"Crown surface; all internal tissues",
+    constraint:"MUST follow ALL calculus sampling (proteomics, microbiome DNA, dietary). Once cleaned, calculus is gone. Archive removed calculus separately.",
+    pairs:"After all calculus assays; before embedding or sectioning" },
+
+  // ── WHOLE TOOTH: imaging → calculus cluster → pulp cluster → root ───────────
+  { id:"micro-ct", g:"Whole Tooth", label:"Micro-CT", t:["All"],
+    stage:"Whole tooth",
+    consumes:"X-ray dose — minimally destructive to organics (DNA/proteins)",
+    preserves:"Physical structure; mineral; intact 3D reference",
+    constraint:"MINIMALLY DESTRUCTIVE to organics. Sequence AFTER pulp DNA/RNA extraction if those are priorities. Must precede sectioning to preserve intact 3D reference frame for section-plane planning.",
+    pairs:"3D scan, histomorphometry (guides section plane), LA-ICP-MS",
+    ref1:"Mahoney P (2013). Enamel thickness along the deciduous tooth row in human children. Am J Phys Anthropol 152(1):72–80.",
+    ref2:"Tafforeau P & Smith TM (2008). Nondestructive imaging of hominoid dental microstructure using phase-contrast synchrotron microtomography. J Hum Evol 54(2):272–278.",
+    note:"Directly applied to deciduous teeth for tissue proportions and DEJ morphology. X-ray dose damages organics; sequence after DNA/protein extraction. Virtual sectioning aids section plane planning." },
+  { id:"oct", g:"Whole Tooth", label:"OCT (Optical Coherence Tomography)", t:["Enamel"],
+    stage:"Whole tooth",
+    consumes:"Nothing — non-destructive",
+    preserves:"All",
+    constraint:"Non-destructive subsurface enamel imaging. Can precede or follow micro-CT.",
+    pairs:"Micro-CT, photography",
+    ref1:"Nakajima Y et al. (2014). Detection of occlusal caries in primary teeth using swept-source optical coherence tomography. J Biomed Opt 19(1):016020.",
+    ref2:"Shimada Y et al. (2015). Application of OCT for diagnosis of caries, cracks, and defects of restorations. Curr Oral Health Rep 2(2):73–80.",
+    note:"Nakajima et al. (2014) explicitly applies SS-OCT to primary teeth for caries detection. Non-destructive; 1–3 mm penetration depth. No sample preparation required." },
+  { id:"calculus-proteomics", g:"Whole Tooth", label:"Calculus Proteomics", t:["Calculus"],
+    stage:"Whole tooth — before calculus removal",
+    consumes:"Calculus dissolved in extraction",
+    preserves:"Crown enamel, dentin, pulp",
+    constraint:"Must precede calculus removal. If splitting with microbiome DNA, divide calculus carefully across aliquots.",
+    pairs:"Calculus microbiome DNA (split), dietary residues" },
+  { id:"calculus-microbiome", g:"Whole Tooth", label:"Calculus Microbiome DNA", t:["Calculus"],
+    stage:"Whole tooth — before calculus removal",
+    consumes:"Calculus dissolved",
+    preserves:"Crown enamel, dentin, pulp",
+    constraint:"Must precede calculus removal. Compatible with proteomics and dietary assays if calculus is split across aliquots.",
+    pairs:"Calculus proteomics, dietary residues, other omics" },
+  { id:"calculus-dietary", g:"Whole Tooth", label:"Calculus Dietary Residue Analysis", t:["Calculus"],
+    stage:"Whole tooth — before calculus removal",
+    consumes:"Calculus",
+    preserves:"Crown enamel, dentin, pulp",
+    constraint:"Must precede calculus removal. Starch, phytoliths, lipids from dental calculus.",
+    pairs:"Calculus proteomics, microbiome DNA" },
+  { id:"pulp-dna", g:"Whole Tooth", label:"Pulp DNA Extraction", t:["Pulp"],
+    stage:"Whole tooth — before sectioning",
+    consumes:"Pulp fully consumed",
+    preserves:"Crown enamel and dentin (if root apex access used)",
+    constraint:"Via root apex access: crown remains fully available for structural workflow. Via crown sectioning: coordinate section plane. Formalin fixation forecloses. Freeze-thaw cycles degrade RNA faster than DNA.",
+    pairs:"Pulp RNA/proteomics (split), aDNA dentin (complementary source)" },
+  { id:"pulp-rna", g:"Whole Tooth", label:"Pulp RNA Extraction", t:["Pulp"],
+    stage:"Whole tooth — before sectioning",
+    consumes:"Pulp fully consumed",
+    preserves:"Crown enamel and dentin (if apex access)",
+    constraint:"Requires fresh/frozen tooth — RNA degrades rapidly. Formalin fixation forecloses. Coordinate with DNA extraction.",
+    pairs:"Pulp DNA (split), pulp proteomics" },
+  { id:"pulp-proteomics", g:"Whole Tooth", label:"Pulp Proteomics", t:["Pulp"],
+    stage:"Whole tooth — before sectioning",
+    consumes:"Pulp consumed",
+    preserves:"Crown enamel and dentin (if apex access)",
+    constraint:"Same access logic as pulp DNA. Coordinate sampling across pulp aliquots.",
+    pairs:"Pulp DNA, pulp RNA" },
+  { id:"adna-root", g:"Whole Tooth", label:"aDNA / ¹⁴C from Root (pre-embedding)", t:["Root"],
+    stage:"Whole tooth — before embedding",
+    consumes:"Lower third of root cut and consumed (~100–300 mg aDNA; 40–200 mg ¹⁴C)",
+    preserves:"Crown enamel, dentin, pulp",
+    constraint:"NOWA-confirmed: MUST occur BEFORE Crystalbond/epoxy embedding. Cementum aDNA via Harney et al. (2021) is a minimally destructive alternative.",
+    pairs:"Pulp DNA (complementary), radiocarbon dating (same root portion)" },
+
+  // ── POST-SECTIONING: embedding → spatial chain → optical/biological →
+  //                    spectroscopy → mechanical/crystallography →
+  //                    SEM carbon-coat session → advanced → root ──────────────
+  { id:"embedding", g:"Post-Sectioning", label:"Embedding (Crystalbond 509 + Epoxy)", t:["All"],
+    stage:"Post-sectioning prep",
+    consumes:"Nothing — Crystalbond reversible (acetone-soluble)",
+    preserves:"Portion 1 releasable later; section archived",
+    constraint:"⚠ SIMS INCOMPATIBLE with Crystalbond-embedded sections — cleaning solvents dissolve it. aDNA/¹⁴C must precede embedding. NOWA three-portion logic: Portion 1 / Section / Portion 2.",
+    pairs:"LA-ICP-MS, histomorphometry — but NOT SIMS on same section" },
+  { id:"sxrf", g:"Post-Sectioning", label:"SXRF (Synchrotron XRF Mapping)", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Non-destructive to section",
+    preserves:"Section",
+    constraint:"Non-destructive. Perform BEFORE LA-ICP-MS on same area — maps elemental distribution to guide targeted ablation transects.",
+    pairs:"LA-ICP-MS (guide then ablate), EPMA",
+    ref1:"Dean MC, Spiers KM, Garrevoet J, Le Cabec A (2019). SXRF mapping of Ca, Sr and Zn at the neonatal line in human deciduous teeth. Arch Oral Biol 104:90–102.",
+    ref2:"Le Cabec A et al. (2023). Using SXRF and LA-ICP-TOFMS to explore evidence of treatment and physiological responses to leprosy in Medieval Denmark. Biology 12(2):184.",
+    note:"Dean et al. (2019) directly applies SXRF to shed deciduous teeth around the neonatal line. Non-destructive to sections; perform before LA-ICP-MS on same section." },
+  { id:"la-icp-ms", g:"Post-Sectioning", label:"LA-ICP-MS (Sr isotopes + trace elements)", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Ablation craters locally destructive; rest of section intact",
+    preserves:"Most of section",
+    constraint:"NOWA: LA-ICP-MS BEFORE histomorphometry — cut section at 120–150 µm for LA, then grind to ~100 µm for histology. SXRF first if mapping same area. Can grind past ablation craters for a fresh section face if material budget allows.",
+    pairs:"SXRF (before), histomorphometry (after), EPMA, bulk ICP-MS (cross-validation)",
+    ref1:"Arora M et al. (2006). Spatial distribution of lead in human primary teeth as a biomarker of pre- and neonatal lead exposure. Sci Total Environ 371(1–3):55–62.",
+    ref2:"Friedman A et al. (2022). Multiple metals in children\\\'s deciduous teeth: community-initiated pilot study. J Expo Sci Environ Epidemiol 32:408–417.",
+    note:"Both papers use deciduous dentine for spatially resolved elemental analysis. Coordinate with SXRF before laser ablation on same section." },
+  { id:"histomorphometry-enamel", g:"Post-Sectioning", label:"Histomorphometry — Enamel", t:["Enamel"],
+    stage:"Post-sectioning",
+    consumes:"Section ground to ~100 µm after LA step",
+    preserves:"Thinned section",
+    constraint:"After LA-ICP-MS (NOWA). Polish before acid-etch for prism visualization. Precedes heavy coating steps (SEM, EPMA).",
+    pairs:"LA-ICP-MS (before), PEEM (coordinate polishing/etching), Raman, light microscopy" },
+  { id:"histomorphometry-dentin", g:"Post-Sectioning", label:"Histomorphometry — Dentin", t:["Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Section at ~100 µm",
+    preserves:"Section",
+    constraint:"After LA-ICP-MS. Autofluorescence collagen screening recommended before isotope microsampling. Von Ebner's lines guide incremental sampling.",
+    pairs:"LA-ICP-MS (before), autofluorescence screening, stable isotope microsampling" },
+  { id:"light-microscopy", g:"Post-Sectioning", label:"Light / Polarised Light Microscopy", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Non-destructive to section",
+    preserves:"Section",
+    constraint:"Best before etching. After polishing if assessing prism structure. Very flexible in sequencing.",
+    pairs:"Histomorphometry, Raman, FTIR, autofluorescence",
+    ref1:"Birch W & Dean MC (2014). A method of calculating human deciduous crown formation times. J Forensic Leg Med 22:127–144.",
+    ref2:"Czermak A et al. (2020). A guide for an anatomically sensitive dentine microsampling approach. Am J Phys Anthropol 173(4):776–783.",
+    note:"Non-destructive on intact tooth surface; histomorphometric work requires ground and polished sections (~100 µm). Polarised light reveals enamel prism orientation and collagen birefringence." },
+  { id:"autofluorescence-section", g:"Post-Sectioning", label:"Autofluorescence — Sections (Collagen Screening)", t:["Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Non-destructive to section",
+    preserves:"Section",
+    constraint:"Pre-screen for dentin collagen integrity (Czermak et al. 2019). Perform BEFORE stable isotope microsampling to identify zones of good preservation. Applies to sections only — not whole tooth.",
+    pairs:"Stable isotope microsampling (after), histomorphometry dentin, bulk isotopes dentin" },
+  { id:"immunofluorescence", g:"Post-Sectioning", label:"Immunofluorescence Microscopy", t:["Dentin","Pulp"],
+    stage:"Post-sectioning",
+    consumes:"Requires aldehyde fixation — forecloses DNA/RNA from fixed sections",
+    preserves:"Section (fixed)",
+    constraint:"Fixation forecloses molecular work from same section. Assign to a dedicated section. Not compatible with isotope or molecular assays on the same material.",
+    pairs:"Light microscopy, autofluorescence sections",
+    ref1:"Zeichner-David M (2006). Regeneration of periodontal tissues: cementogenesis revisited. Periodontol 2000 41(1):196–217.",
+    ref2:"Chen LS et al. (2016). Spatial and temporal localisation of perlecan and type XVIII collagen during murine tooth development. Arch Oral Biol 68:39–48.",
+    note:"No deciduous-specific immunofluorescence studies for exposure biomarker questions found. Requires aldehyde fixation which forecloses DNA/RNA extraction." },
+  { id:"raman", g:"Post-Sectioning", label:"Raman Spectroscopy (µ-Raman)", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Negligible — essentially non-destructive to section",
+    preserves:"Section",
+    constraint:"Do BEFORE any coating steps (PEEM Pt/C coat, SEM carbon coat). Works on mineralized sections without decalcification. Compatible with polished or unpolished sections.",
+    pairs:"FTIR, nanoindentation, PEEM (before coating), histomorphometry",
+    ref1:"Alebrahim MA et al. (2014). ATR-FTIR and Raman spectroscopy of primary and permanent teeth. Biomed Spectrosc Imaging 3(1):15–23.",
+    ref2:"Orilisi G et al. (2021). New insights from Raman MicroSpectroscopy and SEM on microstructure and chemical composition of permanent and deciduous human teeth. Spectrochim Acta A 262:120127.",
+    note:"Alebrahim et al. (2014) directly compares primary and permanent teeth. µ-Raman essentially non-destructive; use lowest power consistent with adequate signal." },
+  { id:"ftir", g:"Post-Sectioning", label:"FTIR (µ-IR / ATR-FTIR)", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Negligible on sections (transmission mode); consumes powder if ATR-FTIR",
+    preserves:"Section",
+    constraint:"Section mode is non-destructive and highly flexible in sequencing. Powder mode is terminal for that material.",
+    pairs:"Raman, histomorphometry, light microscopy",
+    ref1:"Alebrahim MA et al. (2014). ATR-FTIR and Raman spectroscopy of primary and permanent teeth. Biomed Spectrosc Imaging 3(1):15–23.",
+    ref2:"Orilisi G et al. (2021). New insights from Raman MicroSpectroscopy and SEM on microstructure and chemical composition of permanent and deciduous human teeth. Spectrochim Acta A 262:120127.",
+    note:"Alebrahim et al. (2014) directly compares primary and permanent teeth by ATR-FTIR and Raman. µ-IR essentially non-destructive at typical power settings." },
+  { id:"xrd", g:"Post-Sectioning", label:"XRD / µXRD & Texture Tomography", t:["Enamel","Dentin"],
+    stage:"Post-sectioning (µXRD) or whole tooth (bulk XRD)",
+    consumes:"Bulk XRD: non-destructive; µXRD: may require powder",
+    preserves:"Section",
+    constraint:"Bulk XRD on whole tooth can precede sectioning. µXRD on sections is flexible in sequencing.",
+    pairs:"EBSD, Raman",
+    ref1:"Xue J et al. (2013). X-ray microdiffraction, TEM characterization and texture analysis of human dentin and enamel. J Microsc 251(2):144–153.",
+    ref2:"Al-Jawad M et al. (2007). 2D mapping of texture and lattice parameters of dental enamel. Biomaterials 28(18):2908–2914.",
+    note:"No deciduous-specific µXRD study found. High-resolution µXRD and texture tomography require sub-volumes or small samples prepared by FIB or focused cutting." },
+  { id:"nanoindentation", g:"Post-Sectioning", label:"Nanoindentation / Nanomechanical Analysis", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Small surface indents — section largely intact",
+    preserves:"Section (mostly)",
+    constraint:"Polished surface required. Indent marks minor. Must precede coating steps (PEEM Pt/C coat, SEM carbon coat).",
+    pairs:"PEEM (before coating), EBSD, Raman, Vickers hardness",
+    ref1:"Ounsi H et al. (2014). Nanomechanical characterization of exfoliated and retained deciduous incisors. Pediatr Dent 36(4):335–339.",
+    ref2:"Meng Y et al. (2020). Comparison of dynamic mechanical properties of dentin between deciduous and permanent teeth. Dent Mater J 39(4):559–568.",
+    note:"Ounsi et al. (2014) uses nanoindentation directly on exfoliated deciduous incisors; Meng et al. (2020) compares deciduous vs permanent dentin using nanoDMA." },
+  { id:"vickers", g:"Post-Sectioning", label:"Vickers / Knoop Microhardness", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Residual indent marks — locally destructive",
+    preserves:"Section (mostly)",
+    constraint:"Polished surface. Before heavy coating. Coordinate with nanoindentation zone.",
+    pairs:"Nanoindentation, SEM/BSE",
+    ref1:"Alebrahim MA et al. (2014). ATR-FTIR and Raman spectroscopy of primary and permanent teeth. Biomed Spectrosc Imaging 3(1):15–23.",
+    ref2:"Zamudio-Ortega CM et al. (2014). Morphological, chemical and structural characterisation of deciduous enamel. Eur Arch Paediatr Dent 16(1):41–47.",
+    note:"Both papers report microhardness on deciduous enamel and dentin sections directly. Residual indent marks are locally destructive; avoid zones targeted for PEEM/EBSD imaging." },
+  { id:"peem", g:"Post-Sectioning", label:"PEEM / PELICAN (PIC Mapping)", t:["Enamel"],
+    stage:"Post-sectioning",
+    consumes:"Polished surface + Pt/C coating forecloses further surface analysis on that face",
+    preserves:"Bulk section",
+    constraint:"Polishing BEFORE acid-etching. Pt/C coating is terminal for that surface — Raman and nanoindentation must precede it. Not compatible with Raman on same coated face.",
+    pairs:"Nanoindentation (before), Raman (before coating), histomorphometry (coordinate), EBSD" },
+  { id:"ebsd", g:"Post-Sectioning", label:"EBSD", t:["Enamel"],
+    stage:"Post-sectioning",
+    consumes:"Polished surface + coating forecloses surface work",
+    preserves:"Bulk section",
+    constraint:"Polished surface required. Coating step. Do after nanoindentation on same polished area.",
+    pairs:"PEEM, nanoindentation, SEM/BSE" },
+  { id:"sem-bse", g:"Post-Sectioning", label:"SEM / BSE / SE Contrast", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Carbon coating forecloses subsequent surface chemistry on that face",
+    preserves:"Bulk section",
+    constraint:"Carbon coating is terminal for surface-sensitive work on that face. Do after Raman, nanoindentation, and other non-coated surface assays.",
+    pairs:"SEM-EDS, EPMA, cathodoluminescence — combine in same carbon-coating session",
+    ref1:"Zamudio-Ortega CM et al. (2014). Morphological, chemical and structural characterisation of deciduous enamel. Eur Arch Paediatr Dent 16(1):41–47.",
+    ref2:"De Menezes Oliveira MA et al. (2010). Microstructure and mineral composition of permanent and deciduous teeth. Microsc Res Tech 73(5):572–577.",
+    note:"Both papers apply SEM-BSE/SE directly to deciduous enamel/dentin sections. Carbon coating forecloses subsequent surface-sensitive work on that face." },
+  { id:"sem-eds", g:"Post-Sectioning", label:"SEM-EDS (Compositional Mapping)", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Carbon coating required",
+    preserves:"Bulk section",
+    constraint:"Same carbon coating constraint as SEM/BSE. Combine in same session to minimize coating impact.",
+    pairs:"SEM/BSE, EPMA, cathodoluminescence",
+    ref1:"Zamudio-Ortega CM et al. (2014). Morphological, chemical and structural characterisation of deciduous enamel: SEM, EDS, XRD, FTIR and XPS. Eur Arch Paediatr Dent 16(1):41–47.",
+    ref2:"De Menezes Oliveira MA et al. (2010). Microstructure and mineral composition of dental enamel of permanent and deciduous teeth. Microsc Res Tech 73(5):572–577.",
+    note:"Both papers directly apply SEM-EDS to deciduous enamel and dentin for Ca/P mapping. Carbon coating required; forecloses further surface-sensitive work on that face." },
+  { id:"epma", g:"Post-Sectioning", label:"EPMA (Electron Probe Microanalysis)", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Carbon coating forecloses subsequent surface work on that face",
+    preserves:"Bulk section",
+    constraint:"Same carbon coating constraint as SEM. Combine with SEM/BSE/EDS session.",
+    pairs:"SEM/BSE, SEM-EDS, SXRF, cathodoluminescence" },
+  { id:"cathodoluminescence", g:"Post-Sectioning", label:"Cathodoluminescence", t:["Enamel","Dentin"],
+    stage:"Post-sectioning",
+    consumes:"Coating required",
+    preserves:"Bulk section",
+    constraint:"Coating step. Combine with SEM/BSE/EPMA carbon-coating session for efficiency.",
+    pairs:"SEM/BSE, EPMA, SEM-EDS" },
+  { id:"stem-eels", g:"Post-Sectioning", label:"STEM-EDS / STEM-EELS (FIB Liftout)", t:["Enamel","Dentin"],
+    stage:"Post-sectioning — FIB liftout required",
+    consumes:"FIB liftout terminal for sampled volume; may affect adjacent tissue",
+    preserves:"Rest of section",
+    constraint:"FIB preparation is destructive for the targeted volume. Requires SEM/BSE first for orientation and targeting.",
+    pairs:"SEM/BSE (orientation), EBSD",
+    ref1:"DeRocher KA, Smeets PJM et al. (2020). Chemical gradients in human enamel crystallites. Nature 583(7814):66–71.",
+    ref2:"Gordon LM & Joester D (2011). Nanoscale chemical tomography of buried organic-inorganic interfaces in the chiton tooth. Nature 469(7328):194–197.",
+    note:"No deciduous-specific APT/nano-SIMS study exists. FIB liftout preparation required; terminal for sampled volume. Cryogenic STEM minimises beam damage." },
+  { id:"tof-sims", g:"Post-Sectioning", label:"ToF-SIMS / nano-SIMS / APT", t:["Enamel","Dentin"],
+    stage:"Post-sectioning / FIB liftout",
+    consumes:"ToF-SIMS damages surface; APT requires needle specimen (terminal for that volume)",
+    preserves:"Rest of section",
+    constraint:"Surface damage. Perform after non-destructive surface work. APT requires FIB needle. nano-SIMS requires polished flat surface.",
+    pairs:"SXRF (before), FIB/STEM",
+    ref1:"DeRocher KA, Smeets PJM et al. (2020). Chemical gradients in human enamel crystallites. Nature 583(7814):66–71.",
+    ref2:"Gordon LM & Joester D (2011). Nanoscale chemical tomography of buried organic-inorganic interfaces in the chiton tooth. Nature 469(7328):194–197.",
+    note:"ToF-SIMS/nano-SIMS/APT require FIB-prepared specimens or polished surfaces. No deciduous-specific study exists. Terminal for sampled volume." },
+  { id:"sims", g:"Post-Sectioning", label:"SIMS (High-Res Oxygen Isotopes — SHRIMP)", t:["Enamel"],
+    stage:"Post-sectioning",
+    consumes:"Very small surface craters — minimally destructive",
+    preserves:"Section (mostly)",
+    constraint:"⚠ INCOMPATIBLE with Crystalbond 509 embedded sections — cleaning solvents dissolve Crystalbond. If SIMS is a priority, plan embedding strategy BEFORE embedding so a dedicated non-Crystalbond section can be prepared.",
+    pairs:"LA-ICP-MS, EPMA (on non-Crystalbond sections)" },
+  { id:"cementum-annulation", g:"Post-Sectioning", label:"Cementum Annulation Analysis", t:["Cementum"],
+    stage:"Post-sectioning",
+    consumes:"Root section plane; cementum layer very thin on deciduous teeth",
+    preserves:"Section",
+    constraint:"Cementum is very thin in deciduous teeth — limited reliability compared to permanent teeth. Section must include root cross-section.",
+    pairs:"Stable isotopes cementum (adjacent section)" },
+
+  // ── TERMINAL: enamel cluster → dentin cluster → cementum → bulk → final ─────
+  { id:"bulk-isotopes-enamel", g:"Terminal", label:"Bulk Isotopes — Enamel (⁸⁷Sr/⁸⁶Sr, δ¹⁸O, δ¹³C, Pb)", t:["Enamel"],
+    stage:"Terminal",
+    consumes:"Enamel powder dissolved — terminal for that aliquot",
+    preserves:"Other tissue portions",
+    constraint:"From Portion 1 (NOWA) after Crystalbond acetone release, or from dedicated drilling. Powder can be split between multiple isotope systems.",
+    pairs:"Enamel proteomics (same powder), bulk ICP-MS enamel" },
+  { id:"enamel-proteomics", g:"Terminal", label:"Enamel Proteomics (Amelogenin / Sex Det.)", t:["Enamel"],
+    stage:"Terminal",
+    consumes:"Enamel powder dissolved in 5% or 1.2M HCl",
+    preserves:"Other tissue portions",
+    constraint:"From Portion 1 powder or dedicated drilling. Split powder with isotope work if possible. Terminal for that powder aliquot.",
+    pairs:"Bulk isotopes enamel (same powder), bulk ICP-MS enamel",
+    ref1:"Parker GJ et al. (2019). Sex estimation using sexually dimorphic amelogenin protein fragments in human enamel. J Archaeol Sci 101:169–180.",
+    ref2:"Moreira S et al. (2024). Automated high-throughput biological sex identification from archeological human dental enamel using targeted proteomics. J Proteome Res 23(11):4789–4801.",
+    note:"Parker et al. (2019) explicitly includes deciduous teeth; first proteomic sex estimation from deciduous enamel. Moreira et al. (2024) validates on known-sex deciduous teeth." },
+  { id:"bulk-icp-enamel", g:"Terminal", label:"Bulk ICP-MS — Enamel", t:["Enamel"],
+    stage:"Terminal",
+    consumes:"Enamel acid digestion — terminal for that portion",
+    preserves:"Dentin, root",
+    constraint:"Lower spatial resolution than LA-ICP-MS. Useful for total metal burden or cross-validation. Terminal.",
+    pairs:"Bulk isotopes enamel, enamel proteomics, LA-ICP-MS (spatial complement)",
+    ref1:"Arora M et al. (2006). Spatial distribution of lead in human primary teeth as a biomarker of pre- and neonatal lead exposure. Sci Total Environ 371(1–3):55–62.",
+    ref2:"Friedman A et al. (2022). Multiple metals in children\\\'s deciduous teeth: community-initiated pilot study. J Expo Sci Environ Epidemiol 32:408–417.",
+    note:"Both papers directly use deciduous dentine for bulk and spatially resolved elemental analysis. Terminal for dissolved material." },
+  { id:"stable-isotope-microsampling", g:"Terminal", label:"Stable Isotope Microsampling — Dentin (Incremental)", t:["Dentin"],
+    stage:"Terminal",
+    consumes:"Sampled dentin increments (demineralized)",
+    preserves:"Other sections/portions",
+    constraint:"Autofluorescence collagen screening strongly recommended before sampling. Histomorphometry used for spatial orientation of sampling transect. Incremental = high temporal resolution exposure record.",
+    pairs:"Autofluorescence screening (before), histomorphometry (orientation), bulk isotopes dentin" },
+  { id:"bulk-isotopes-dentin", g:"Terminal", label:"Bulk Isotopes — Root Dentin (δ¹³C, δ¹⁵N, δ³⁴S collagen)", t:["Dentin"],
+    stage:"Terminal",
+    consumes:"Root dentin ~20–100 mg consumed",
+    preserves:"Crown dentin, enamel",
+    constraint:"Collagen extraction. Autofluorescence pre-screening recommended before sampling. Ethanol storage affects δ¹³C/δ¹⁵N organic signals — avoid if planning collagen isotopes.",
+    pairs:"Autofluorescence screening (before), stable isotope microsampling, radiocarbon dating" },
+  { id:"bulk-icp-dentin", g:"Terminal", label:"Bulk ICP-MS — Dentin", t:["Dentin"],
+    stage:"Terminal",
+    consumes:"Dentin acid digestion — terminal for that portion",
+    preserves:"Enamel, root",
+    constraint:"Terminal for dentin portion. Useful for total concentration cross-validation with LA-ICP-MS.",
+    pairs:"Bulk isotopes dentin, LA-ICP-MS (cross-validation)",
+    ref1:"Arora M et al. (2006). Spatial distribution of lead in human primary teeth as a biomarker of pre- and neonatal lead exposure. Sci Total Environ 371(1–3):55–62.",
+    ref2:"Friedman A et al. (2022). Multiple metals in children\\\'s deciduous teeth: community-initiated pilot study. J Expo Sci Environ Epidemiol 32:408–417.",
+    note:"Both papers directly use deciduous dentine for bulk and spatially resolved elemental analysis. Terminal for dissolved material." },
+  { id:"adna-dentin", g:"Terminal", label:"Ancient / Modern DNA — Dentin", t:["Dentin"],
+    stage:"Terminal",
+    consumes:"Dentin demineralized for extraction",
+    preserves:"Other portions",
+    constraint:"Micro-CT X-ray dose may degrade DNA — sequence extraction BEFORE micro-CT if DNA is priority. Formalin fixation forecloses. Dry/old storage yields degraded DNA.",
+    pairs:"Pulp DNA (complementary source), radiocarbon dating (same root portion)" },
+  { id:"radiocarbon", g:"Terminal", label:"Radiocarbon Dating (¹⁴C)", t:["Dentin","Root"],
+    stage:"Terminal",
+    consumes:"~40–200 mg typically; dentin collagen preferred; AMS reduces to ~1 mg",
+    preserves:"Crown",
+    constraint:"NOWA: lower root third removed BEFORE embedding. Significant material cost. Can be paired with aDNA from same root if material permits.",
+    pairs:"aDNA/¹⁴C root (pre-embedding), aDNA dentin, bulk isotopes dentin" },
+  { id:"stable-isotopes-cementum", g:"Terminal", label:"Stable Isotope Analysis — Cementum", t:["Cementum"],
+    stage:"Terminal",
+    consumes:"Cementum sampled and dissolved",
+    preserves:"Enamel, dentin",
+    constraint:"Very thin cementum in deciduous teeth limits yield. Coordinate with cementum annulation section.",
+    pairs:"Cementum annulation, bulk isotopes dentin" },
+  { id:"fluoride", g:"Terminal", label:"Fluoride Analysis (Bulk Dissolution)", t:["Enamel","Dentin"],
+    stage:"Terminal",
+    consumes:"Powder dissolved — terminal",
+    preserves:"Other portions",
+    constraint:"Terminal for powder. Coordinate with other dissolution-based assays on same portion.",
+    pairs:"Bulk ICP-MS enamel/dentin",
+    ref1:"Weatherell JA et al. (1977). Distribution of fluoride in the human dentition. Caries Res 11(Suppl 1):100–127.",
+    ref2:"Fejerskov O et al. (2008). Fluoride in Dentistry, 3rd ed. Blackwell Munksgaard.",
+    note:"Classic method for bulk F in enamel/dentin via ion-selective electrode after dissolution. No recent deciduous-specific study found beyond classic literature." },
+  { id:"other-omics", g:"Terminal", label:"Other Omics (Metagenomics / Metabolomics / Epigenomics)", t:["Calculus","Pulp"],
+    stage:"Terminal",
+    consumes:"Material consumed in extraction",
+    preserves:"Crown and other tissues",
+    constraint:"Calculus assays: must precede calculus removal. Pulp assays: same constraints as pulp DNA/RNA. Formalin fixation forecloses.",
+    pairs:"Calculus microbiome, pulp DNA",
+    ref1:"Wright SL et al. (2021). Advancing and refining archaeological dental calculus research using multiomic frameworks. STAR: Sci Technol Archaeol Res 7(1):162–178.",
+    ref2:"Fagernäs Z et al. (2020). Unified protocol for simultaneous extraction of DNA and proteins from archaeological dental calculus. J Archaeol Sci 118:105135.",
+    note:"Calculus supports multiomics (metagenomics + proteomics). Methylation/epigenomic analyses of pulp/dentin DNA are feasible but not yet reported for shed deciduous teeth." },
+  { id:"morphological-reconstruction", g:"Terminal", label:"Morphological Reconstruction", t:["All"],
+    stage:"Terminal — final step",
+    consumes:"Light-curing radiopaque composite applied to cut surfaces",
+    preserves:"Visual 3D appearance for archival/display",
+    constraint:"NOWA: final step. Composite fills sectioning cuts for archival and display. Terminal to further analysis of filled surfaces.",
+    pairs:"After ALL other assays are complete" },
+];
+
+// ─── EDGES ────────────────────────────────────────────────────────────────────
+// type: "Order" | "Incompat" | "Pair"
+const EDGES = [
+  // Ordering — calculus sampling before removal
+  { f:"calculus-proteomics",       t:"calculus-removal",              type:"Order", lbl:"sample → clean" },
+  { f:"calculus-microbiome",       t:"calculus-removal",              type:"Order", lbl:"sample → clean" },
+  { f:"calculus-dietary",          t:"calculus-removal",              type:"Order", lbl:"sample → clean" },
+  { f:"other-omics",               t:"calculus-removal",              type:"Order", lbl:"calculus omics first" },
+  // aDNA/14C root before embedding
+  { f:"adna-root",                 t:"embedding",                     type:"Order", lbl:"NOWA: root before embed" },
+  // SXRF before LA-ICP-MS
+  { f:"sxrf",                      t:"la-icp-ms",                     type:"Order", lbl:"map → ablate" },
+  // LA-ICP-MS before histomorphometry (NOWA)
+  { f:"la-icp-ms",                 t:"histomorphometry-enamel",       type:"Order", lbl:"NOWA: LA first (120–150µm) → grind to 100µm" },
+  { f:"la-icp-ms",                 t:"histomorphometry-dentin",       type:"Order", lbl:"NOWA: LA first" },
+  // Raman before coating
+  { f:"raman",                     t:"peem",                          type:"Order", lbl:"Raman before Pt/C coat" },
+  { f:"raman",                     t:"sem-bse",                       type:"Order", lbl:"Raman before C-coat" },
+  // Nanoindentation before coating
+  { f:"nanoindentation",           t:"peem",                          type:"Order", lbl:"indent before coat" },
+  { f:"nanoindentation",           t:"ebsd",                          type:"Order", lbl:"indent before coat" },
+  // Autofluorescence before isotope microsampling
+  { f:"autofluorescence-section",  t:"stable-isotope-microsampling",  type:"Order", lbl:"collagen screen first" },
+  { f:"autofluorescence-section",  t:"bulk-isotopes-dentin",          type:"Order", lbl:"collagen screen first" },
+  // Histomorphometry guides microsampling
+  { f:"histomorphometry-dentin",   t:"stable-isotope-microsampling",  type:"Order", lbl:"orientation for sampling" },
+  // Micro-CT before sectioning
+  { f:"micro-ct",                  t:"la-icp-ms",                     type:"Order", lbl:"CT before sectioning" },
+  { f:"micro-ct",                  t:"histomorphometry-enamel",       type:"Order", lbl:"CT before sectioning" },
+
+  // Incompatibilities
+  { f:"embedding",                 t:"sims",                          type:"Incompat", lbl:"⚠ Crystalbond dissolves in SIMS cleaning" },
+  { f:"formalin",                  t:"pulp-dna",                      type:"Incompat", lbl:"⚠ Formalin forecloses DNA" },
+  { f:"formalin",                  t:"adna-dentin",                   type:"Incompat", lbl:"⚠ Formalin forecloses DNA" },
+  { f:"formalin",                  t:"enamel-proteomics",             type:"Incompat", lbl:"⚠ Formalin forecloses proteomics" },
+  { f:"ethanol",                   t:"bulk-isotopes-dentin",          type:"Incompat", lbl:"⚠ Ethanol affects δ¹³C/δ¹⁵N" },
+  { f:"immunofluorescence",        t:"adna-dentin",                   type:"Incompat", lbl:"⚠ Aldehyde fixation forecloses DNA" },
+
+  // Good pairings
+  { f:"la-icp-ms",                 t:"bulk-icp-dentin",               type:"Pair", lbl:"cross-validate concentrations" },
+  { f:"bulk-isotopes-enamel",      t:"enamel-proteomics",             type:"Pair", lbl:"split same powder" },
+  { f:"bulk-isotopes-enamel",      t:"bulk-icp-enamel",               type:"Pair", lbl:"same portion" },
+  { f:"cementum-annulation",       t:"stable-isotopes-cementum",      type:"Pair", lbl:"same section/region" },
+  { f:"calculus-proteomics",       t:"calculus-microbiome",           type:"Pair", lbl:"split calculus aliquots" },
+  { f:"pulp-dna",                  t:"adna-dentin",                   type:"Pair", lbl:"complementary DNA sources" },
+  { f:"adna-root",                 t:"radiocarbon",                   type:"Pair", lbl:"same root portion" },
+  { f:"sem-bse",                   t:"sem-eds",                       type:"Pair", lbl:"same coating session" },
+  { f:"sem-bse",                   t:"epma",                          type:"Pair", lbl:"same coating session" },
+  { f:"sem-bse",                   t:"cathodoluminescence",           type:"Pair", lbl:"same coating session" },
+];
+
+// ─── LAYOUT ───────────────────────────────────────────────────────────────────
+const GRP_ORDER = ["Storage","At Acquisition","Whole Tooth","Post-Sectioning","Terminal"];
+const COL_CX = { "Storage":120, "At Acquisition":380, "Whole Tooth":650, "Post-Sectioning":940, "Terminal":1230 };
+const NW = 210, NH = 40, VGAP = 7, START_Y = 80;
+
+const nodeById = {};
+NODES.forEach(n => nodeById[n.id] = n);
+
+function buildPositions(visibleIds) {
+  const byGrp = {};
+  GRP_ORDER.forEach(g => byGrp[g] = []);
+  NODES.forEach(n => { if (visibleIds.has(n.id)) byGrp[n.g].push(n.id); });
+  const pos = {};
+  GRP_ORDER.forEach(g => {
+    byGrp[g].forEach((id, i) => {
+      pos[id] = { x: COL_CX[g], y: START_Y + i * (NH + VGAP) };
+    });
+  });
+  return pos;
+}
+
+function svgH(pos) {
+  let m = 0;
+  Object.values(pos).forEach(p => { if (p.y + NH > m) m = p.y + NH; });
+  return m + 60;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const TISSUES = ["All","Enamel","Dentin","Calculus","Pulp","Cementum"];
+
+  // visible nodes
+  const visNodes = S.tissue === "All"
+    ? NODES
+    : NODES.filter(n => n.t.includes(S.tissue) || n.t.includes("All"));
+  const visIds = new Set(visNodes.map(n => n.id));
+
+  const pos = buildPositions(visIds);
+  const H = svgH(pos);
+  const W = 1490;
+
+  // ── EDGES SVG ──
+  let edgeSVG = "";
+  EDGES.forEach((e, i) => {
+    if (!visIds.has(e.f) || !visIds.has(e.t)) return;
+    const tkey = e.type === "Incompat" ? "Incompat" : e.type === "Pair" ? "Pair" : "Order";
+    if (!S["show"+tkey]) return;
+    const pf = pos[e.f], pt = pos[e.t];
+    if (!pf || !pt) return;
+    const x1 = pf.x + NW/2, y1 = pf.y + NH/2;
+    const x2 = pt.x - NW/2, y2 = pt.y + NH/2;
+    const cx = (x1 + x2) / 2;
+    const d = `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`;
+    const col = e.type === "Incompat" ? "#ef4444" : e.type === "Pair" ? "#10b981" : "#94a3b8";
+    const dash = e.type !== "Order" ? "stroke-dasharray='5,3'" : "";
+    const w = e.type === "Incompat" ? 2 : 1.5;
+    const hov = S.hovEdge === i;
+    const opacity = hov ? 1 : 0.65;
+    edgeSVG += `
+      <path d="${d}" stroke="${col}" stroke-width="${hov ? w+1 : w}" ${dash}
+        fill="none" marker-end="url(#arr-${e.type})"
+        style="cursor:pointer;opacity:${opacity}"
+        onmouseenter="hoverEdge(${i})" onmouseleave="clearHoverEdge()"
+      />`;
+    if (hov) {
+      const mx = (x1+x2)/2, my = Math.min(y1,y2) + Math.abs(y2-y1)/2;
+      edgeSVG += `<text x="${mx}" y="${my-6}" text-anchor="middle" font-size="8" fill="${col}" pointer-events="none"
+        style="background:white">${e.lbl}</text>`;
+    }
+  });
+
+  // ── COLUMN HEADERS & BACKGROUNDS ──
+  let colSVG = "";
+  GRP_ORDER.forEach(g => {
+    const m = GM[g];
+    const cnt = visNodes.filter(n=>n.g===g).length;
+    colSVG += `
+      <rect x="${COL_CX[g]-NW/2-8}" y="12" width="${NW+16}" height="${H-22}" rx="8" fill="${m.hdr}" opacity="0.04"/>
+      <rect x="${COL_CX[g]-NW/2-6}" y="18" width="${NW+12}" height="28" rx="6" fill="${m.hdr}" opacity="0.88"/>
+      <text x="${COL_CX[g]}" y="37" text-anchor="middle" font-size="9.5" font-weight="700" fill="white"
+        letter-spacing="0.05em">${g.toUpperCase()} (${cnt})</text>`;
+  });
+
+  // ── NODES SVG ──
+  let nodeSVG = "";
+  const dotC = {"All":"#94a3b8","Enamel":"#a78bfa","Dentin":"#fb923c","Calculus":"#84cc16","Pulp":"#ec4899","Cementum":"#38bdf8","Root":"#fdba74"};
+  visNodes.forEach(n => {
+    const p = pos[n.id];
+    if (!p) return;
+    const m = GM[n.g];
+    const isSel = S.sel === n.id;
+    const lx = p.x - NW/2, ly = p.y;
+    const rawLabel = n.label;
+    const short = rawLabel.length > 34 ? rawLabel.slice(0,32)+"…" : rawLabel;
+    let dots = "";
+    n.t.forEach((t,ti) => {
+      dots += `<circle cx="${lx+NW-12-ti*11}" cy="${ly+NH/2}" r="4" fill="${dotC[t]||'#94a3b8'}" opacity="0.9" pointer-events="none"/>`;
+    });
+    nodeSVG += `
+      <g onclick="selectNode('${n.id}')" style="cursor:pointer">
+        <rect class="node-rect" x="${lx}" y="${ly}" width="${NW}" height="${NH}" rx="5"
+          fill="${m.fill}" stroke="${isSel ? '#f59e0b' : m.stroke}"
+          stroke-width="${isSel ? 2.5 : 1.1}"/>
+        <text x="${lx+7}" y="${ly+14}" font-size="7.5" font-weight="700" fill="${m.text}" pointer-events="none">${n.g.toUpperCase()}</text>
+        <text x="${lx+7}" y="${ly+27}" font-size="9.5" fill="#1e293b" pointer-events="none">${short}</text>
+        ${dots}
+      </g>`;
+  });
+
+  // ── DETAILS PANEL ──
+  let detailsHTML = "";
+  if (S.sel && nodeById[S.sel]) {
+    const n = nodeById[S.sel];
+    const m = GM[n.g];
+    const tissueBadges = n.t.map(t => {
+      const tm = TM[t] || TM["All"];
+      return `<span class="d-tissue" style="background:${tm.fill};color:${tm.stroke};border:1px solid ${tm.stroke}">${t}</span>`;
+    }).join("");
+    const isDanger = n.constraint && (n.constraint.includes("⚠") || n.constraint.toLowerCase().includes("forecloses all"));
+    const constraintClass = isDanger ? "d-box d-box-danger" : "d-box d-box-warn";
+    detailsHTML = `<div class="details-inner">
+      <span class="d-badge" style="background:${m.fill};color:${m.text};border:1px solid ${m.stroke}">${n.g}</span>
+      <div class="d-title">${n.label}</div>
+      <div class="d-stage">${n.stage}</div>
+      <div class="d-tissues">${tissueBadges}</div>
+      <hr class="d-divider">
+      <div class="d-section">
+        <div class="d-section-title">Consumes / Damages</div>
+        <div class="d-box d-box-gray">${n.consumes}</div>
+      </div>
+      <div class="d-section">
+        <div class="d-section-title">Preserves / Leaves Available</div>
+        <div class="d-text">${n.preserves}</div>
+      </div>
+      <div class="d-section">
+        <div class="d-section-title">Key Ordering Constraint</div>
+        <div class="${constraintClass}">${n.constraint}</div>
+      </div>
+      <div class="d-section">
+        <div class="d-section-title">Good Pairings / Collaborations</div>
+        <div class="d-box d-box-green">${n.pairs}</div>
+      </div>
+      ${n.ref1 ? `<hr class="d-divider">
+      <div class="d-section">
+        <div class="d-section-title">References</div>
+        <div class="d-ref"><span class="d-ref-num">1</span>${n.ref1}</div>
+        ${n.ref2 ? `<div class="d-ref"><span class="d-ref-num">2</span>${n.ref2}</div>` : ''}
+      </div>
+      ${n.note ? `<div class="d-section">
+        <div class="d-section-title">Deciduous Note</div>
+        <div class="d-box d-box-blue">${n.note}</div>
+      </div>` : ''}` : ''}
+    </div>`;
+  } else {
+    detailsHTML = `<div class="details-empty">Click any node to see ordering constraints, tissue details, and good collaboration pairings.</div>`;
+  }
+
+  // ── FILTER BUTTONS ──
+  const tBtns = ["All","Enamel","Dentin","Calculus","Pulp","Cementum"].map(t =>
+    `<button class="filter-btn ${S.tissue===t?'active':''}" onclick="setTissue('${t}')">${t}</button>`
+  ).join("");
+
+  const eBtns = [
+    { key:"Order",   lbl:"Ordering",         cls:"active-gray" },
+    { key:"Incompat",lbl:"Incompatibilities", cls:"active-red" },
+    { key:"Pair",    lbl:"Good pairings",     cls:"active-green" },
+  ].map(e =>
+    `<button class="filter-btn ${S['show'+e.key] ? e.cls : ''}" onclick="toggleEdge('${e.key}')">${e.lbl}</button>`
+  ).join("");
+
+  // ── LEGEND ──
+  const grpLeg = GRP_ORDER.map(g => {
+    const m = GM[g];
+    return `<div class="legend-item"><div class="legend-sq" style="background:${m.hdr}"></div>${g}</div>`;
+  }).join("");
+  const tisLeg = ["Enamel","Dentin","Calculus","Pulp","Cementum"].map(t => {
+    const m = TM[t];
+    return `<div class="legend-item"><div class="legend-dot" style="background:${m.dot}"></div>${t}</div>`;
+  }).join("");
+
+  // ── ASSEMBLE ──
+  document.getElementById("app").innerHTML = `
+    <div class="header">
+      <div>
+        <div class="header-title">Deciduous Tooth Assay Workflow DAG</div>
+        <div class="header-sub">ECHO Workshop · Maximizing the Potential of Shed Teeth · April 22, 2026</div>
+      </div>
+      <div class="filters"><span class="filter-label">TISSUE:</span>${tBtns}</div>
+      <div class="filters"><span class="filter-label">EDGES:</span>${eBtns}</div>
+      <div class="legend">${grpLeg}&nbsp;&nbsp;${tisLeg}</div>
+    </div>
+    <div class="main">
+      <div class="dag-wrap">
+        <svg class="dag-svg" width="${W}" height="${H}">
+          <defs>
+            <marker id="arr-Order"   markerWidth="7" markerHeight="7" refX="6" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#94a3b8"/></marker>
+            <marker id="arr-Incompat" markerWidth="7" markerHeight="7" refX="6" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#ef4444"/></marker>
+            <marker id="arr-Pair"    markerWidth="7" markerHeight="7" refX="6" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#10b981"/></marker>
+          </defs>
+          ${colSVG}
+          <g id="edges">${edgeSVG}</g>
+          <g id="nodes">${nodeSVG}</g>
+        </svg>
+      </div>
+      <div class="details" id="details">${detailsHTML}</div>
+    </div>`;
+}
+
+render();
+</script>
+</body>
+</html>
