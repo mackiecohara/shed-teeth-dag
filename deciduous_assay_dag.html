@@ -8,7 +8,9 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; }
 #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-.header { background: #1e293b; color: white; padding: 10px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; flex-shrink: 0; }
+.header { background: #1e293b; color: white; padding: 8px 16px 6px; display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.header-row1 { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.header-row2 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-bottom: 1px; }
 .header-title { font-size: 14px; font-weight: 700; }
 .header-sub { font-size: 10px; color: #94a3b8; }
 .filters { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -16,9 +18,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .filter-btn { padding: 3px 9px; border-radius: 20px; border: 1px solid #475569; background: transparent; color: #cbd5e1; font-size: 10px; cursor: pointer; }
 .filter-btn:hover { background: #334155; }
 .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
-.filter-btn.active-red { background: #ef4444; border-color: #ef4444; color: white; }
-.filter-btn.active-green { background: #10b981; border-color: #10b981; color: white; }
-.filter-btn.active-gray { background: #64748b; border-color: #64748b; color: white; }
+.pipeline-btn { padding: 3px 10px; border-radius: 20px; border: 1.5px solid transparent; background: rgba(255,255,255,0.07); color: #94a3b8; font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+.pipeline-btn:hover { background: rgba(255,255,255,0.13); }
 .legend { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-left: auto; }
 .legend-item { display: flex; align-items: center; gap: 3px; font-size: 9px; color: #94a3b8; }
 .legend-sq { width: 9px; height: 9px; border-radius: 2px; }
@@ -29,7 +30,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .node-g { cursor: pointer; }
 .node-g:hover rect.node-rect { filter: brightness(0.93); }
 .details { width: 300px; flex-shrink: 0; background: white; border-left: 1px solid #e2e8f0; overflow-y: auto; }
-.details-empty { display: flex; align-items: center; justify-content: center; height: 200px; color: #94a3b8; font-size: 12px; text-align: center; padding: 20px; line-height: 1.6; }
+.details-empty { display: flex; align-items: center; justify-content: center; height: 220px; color: #94a3b8; font-size: 12px; text-align: center; padding: 24px; line-height: 1.7; }
 .details-inner { padding: 14px; }
 .d-badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 9px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.03em; }
 .d-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; line-height: 1.35; }
@@ -40,14 +41,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .d-section-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 4px; }
 .d-ref { display: flex; gap: 6px; font-size: 10px; color: #475569; line-height: 1.4; margin-bottom: 5px; }
 .d-ref-num { flex-shrink: 0; width: 14px; height: 14px; border-radius: 50%; background: #6366f1; color: white; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
-.d-box-blue { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
 .d-text { font-size: 11px; line-height: 1.5; color: #374151; }
-.d-box { border-radius: 5px; padding: 7px 9px; font-size: 11px; line-height: 1.5; }
+.d-box { border-radius: 5px; padding: 7px 9px; font-size: 11px; line-height: 1.6; }
 .d-box-warn { background: #fef3c7; border: 1px solid #fde68a; color: #92400e; }
 .d-box-danger { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
 .d-box-green { background: #d1fae5; border: 1px solid #a7f3d0; color: #065f46; }
 .d-box-gray { background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; }
+.d-box-blue { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+.d-box-red { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
 .d-divider { border: none; border-top: 1px solid #f1f5f9; margin: 10px 0; }
+.pl-node-link { font-size: 10px; color: #374151; padding: 2px 0; cursor: pointer; display: block; }
+.pl-node-link:hover { color: #1d4ed8; text-decoration: underline; }
+.key-hint { font-size: 9px; color: #64748b; display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.key-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; vertical-align: middle; }
 </style>
 </head>
 <body>
@@ -55,20 +61,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <script>
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const S = {
-  sel: null,          // selected node id
-  tissue: "All",      // tissue filter
-  showOrder: true,    // show ordering edges
-  showIncompat: true, // show incompatibility edges
-  showPair: true,     // show pairing edges
-  hovEdge: null,      // hovered edge index
+  sel:      null,   // selected node id
+  tissue:   "All",  // tissue filter
+  pipeline: null,   // selected pipeline id
 };
 
-// ─── GLOBAL HANDLERS (called from onclick attrs) ──────────────────────────────
-function selectNode(id) { S.sel = (S.sel === id) ? null : id; render(); }
-function setTissue(t)    { S.tissue = t; render(); }
-function toggleEdge(t)   { S['show'+t] = !S['show'+t]; render(); }
-function hoverEdge(i)    { S.hovEdge = i; render(); }
-function clearHoverEdge(){ S.hovEdge = null; render(); }
+// ─── GLOBAL HANDLERS ─────────────────────────────────────────────────────────
+function selectNode(id)     { S.sel = (S.sel === id) ? null : id; S.pipeline = null; render(); }
+function setTissue(t)       { S.tissue = t; render(); }
+function selectPipeline(id) { S.pipeline = (S.pipeline === id) ? null : id; S.sel = null; render(); }
 
 // ─── COLOURS ─────────────────────────────────────────────────────────────────
 const GM = {
@@ -88,9 +89,59 @@ const TM = {
   "Root":     { fill:"#fff7ed", stroke:"#fdba74", dot:"#fdba74" },
 };
 
+// ─── PIPELINES ────────────────────────────────────────────────────────────────
+const PIPELINES = [
+  {
+    id: "exposure",
+    label: "Exposure Biomarker Record",
+    desc: "Spatially resolved metals & isotopes from incremental dentin and enamel — the classic shed-tooth strength.",
+    color: "#6366f1",
+    nodes: ["photography","weight","micro-ct","calculus-removal","embedding","sxrf","la-icp-ms",
+            "histomorphometry-dentin","autofluorescence-section","stable-isotope-microsampling",
+            "bulk-isotopes-enamel","bulk-icp-enamel","bulk-icp-dentin","fluoride","morphological-reconstruction"]
+  },
+  {
+    id: "devtiming",
+    label: "Developmental Timing & Life History",
+    desc: "Crown formation chronology, neonatal line, weaning timing, and stress events — the first 2–3 years of life recorded in enamel and dentin increments.",
+    color: "#f97316",
+    nodes: ["photography","weight","scan3d","qlf","micro-ct","embedding","sxrf","la-icp-ms",
+            "histomorphometry-enamel","histomorphometry-dentin","light-microscopy",
+            "autofluorescence-section","stable-isotope-microsampling","morphological-reconstruction"]
+  },
+  {
+    id: "calculus",
+    label: "Calculus Multiomics",
+    desc: "Full calculus harvest before any cleaning: microbiome, proteomics, dietary residues, and metagenomics from one deposit.",
+    color: "#84cc16",
+    nodes: ["photography","weight","scan3d","calculus-proteomics","calculus-microbiome",
+            "calculus-dietary","other-omics","calculus-removal","morphological-reconstruction"]
+  },
+  {
+    id: "microstructure",
+    label: "Microstructure & Mechanics",
+    desc: "Full structural characterization: imaging, spectroscopy, nanomechanics, and electron microscopy in one optimized sequence.",
+    color: "#f59e0b",
+    nodes: ["photography","weight","scan3d","dmta","micro-ct","oct","embedding",
+            "histomorphometry-enamel","histomorphometry-dentin","light-microscopy",
+            "raman","ftir","nanoindentation","vickers","sem-bse","sem-eds","epma","morphological-reconstruction"]
+  },
+  {
+    id: "biomarker-sex",
+    label: "Sex + Ancestry Profiling",
+    desc: "Enamel proteomics for sex, strontium for mobility, aDNA for ancestry — combined from minimal material.",
+    color: "#14b8a6",
+    nodes: ["photography","weight","scan3d","micro-ct","embedding",
+            "la-icp-ms","bulk-isotopes-enamel","enamel-proteomics","bulk-icp-enamel",
+            "adna-root","adna-dentin","morphological-reconstruction"]
+  }
+];
+const pipelineById = {};
+PIPELINES.forEach(p => pipelineById[p.id] = p);
+
 // ─── NODES ────────────────────────────────────────────────────────────────────
 const NODES = [
-  // ── STORAGE: permissive → restrictive ──────────────────────────────────────
+  // ── STORAGE ──────────────────────────────────────────────────────────────────
   { id:"refrigerated", g:"Storage", label:"Refrigerated (4°C, non-frozen)", t:["All"],
     stage:"Pre-research holding",
     consumes:"Nothing — holding condition",
@@ -119,10 +170,10 @@ const NODES = [
     stage:"Pre-research holding",
     consumes:"FORECLOSES DNA, RNA, and most proteomics",
     preserves:"Mineral structure; histology",
-    constraint:"Do NOT fix if any molecular work is planned. Formalin fixation is irreversible and broadly forecloses molecular branches.",
+    constraint:"⚠ Do NOT fix if any molecular work is planned. Formalin fixation is irreversible and broadly forecloses molecular branches.",
     pairs:"Histomorphometry, SEM, EPMA only" },
 
-  // ── AT ACQUISITION: surface documentation → qlf → calculus removal ─────────
+  // ── AT ACQUISITION ────────────────────────────────────────────────────────────
   { id:"photography", g:"At Acquisition", label:"Photography & Clinical Scoring", t:["All"],
     stage:"At acquisition — MUST be first",
     consumes:"Nothing",
@@ -166,7 +217,7 @@ const NODES = [
     constraint:"MUST follow ALL calculus sampling (proteomics, microbiome DNA, dietary). Once cleaned, calculus is gone. Archive removed calculus separately.",
     pairs:"After all calculus assays; before embedding or sectioning" },
 
-  // ── WHOLE TOOTH: imaging → calculus cluster → pulp cluster → root ───────────
+  // ── WHOLE TOOTH ───────────────────────────────────────────────────────────────
   { id:"micro-ct", g:"Whole Tooth", label:"Micro-CT", t:["All"],
     stage:"Whole tooth",
     consumes:"X-ray dose — minimally destructive to organics (DNA/proteins)",
@@ -228,9 +279,7 @@ const NODES = [
     constraint:"NOWA-confirmed: MUST occur BEFORE Crystalbond/epoxy embedding. Cementum aDNA via Harney et al. (2021) is a minimally destructive alternative.",
     pairs:"Pulp DNA (complementary), radiocarbon dating (same root portion)" },
 
-  // ── POST-SECTIONING: embedding → spatial chain → optical/biological →
-  //                    spectroscopy → mechanical/crystallography →
-  //                    SEM carbon-coat session → advanced → root ──────────────
+  // ── POST-SECTIONING ───────────────────────────────────────────────────────────
   { id:"embedding", g:"Post-Sectioning", label:"Embedding (Crystalbond 509 + Epoxy)", t:["All"],
     stage:"Post-sectioning prep",
     consumes:"Nothing — Crystalbond reversible (acetone-soluble)",
@@ -253,7 +302,7 @@ const NODES = [
     constraint:"NOWA: LA-ICP-MS BEFORE histomorphometry — cut section at 120–150 µm for LA, then grind to ~100 µm for histology. SXRF first if mapping same area. Can grind past ablation craters for a fresh section face if material budget allows.",
     pairs:"SXRF (before), histomorphometry (after), EPMA, bulk ICP-MS (cross-validation)",
     ref1:"Arora M et al. (2006). Spatial distribution of lead in human primary teeth as a biomarker of pre- and neonatal lead exposure. Sci Total Environ 371(1–3):55–62.",
-    ref2:"Friedman A et al. (2022). Multiple metals in children\\\'s deciduous teeth: community-initiated pilot study. J Expo Sci Environ Epidemiol 32:408–417.",
+    ref2:"Friedman A et al. (2022). Multiple metals in children\'s deciduous teeth: community-initiated pilot study. J Expo Sci Environ Epidemiol 32:408–417.",
     note:"Both papers use deciduous dentine for spatially resolved elemental analysis. Coordinate with SXRF before laser ablation on same section." },
   { id:"histomorphometry-enamel", g:"Post-Sectioning", label:"Histomorphometry — Enamel", t:["Enamel"],
     stage:"Post-sectioning",
@@ -276,7 +325,7 @@ const NODES = [
     ref1:"Birch W & Dean MC (2014). A method of calculating human deciduous crown formation times. J Forensic Leg Med 22:127–144.",
     ref2:"Czermak A et al. (2020). A guide for an anatomically sensitive dentine microsampling approach. Am J Phys Anthropol 173(4):776–783.",
     note:"Non-destructive on intact tooth surface; histomorphometric work requires ground and polished sections (~100 µm). Polarised light reveals enamel prism orientation and collagen birefringence." },
-  { id:"autofluorescence-section", g:"Post-Sectioning", label:"Autofluorescence — Sections (Collagen Screening)", t:["Dentin"],
+  { id:"autofluorescence-section", g:"Post-Sectioning", label:"Autofluorescence — Sections (Collagen)", t:["Dentin"],
     stage:"Post-sectioning",
     consumes:"Non-destructive to section",
     preserves:"Section",
@@ -409,7 +458,7 @@ const NODES = [
     constraint:"Cementum is very thin in deciduous teeth — limited reliability compared to permanent teeth. Section must include root cross-section.",
     pairs:"Stable isotopes cementum (adjacent section)" },
 
-  // ── TERMINAL: enamel cluster → dentin cluster → cementum → bulk → final ─────
+  // ── TERMINAL ──────────────────────────────────────────────────────────────────
   { id:"bulk-isotopes-enamel", g:"Terminal", label:"Bulk Isotopes — Enamel (⁸⁷Sr/⁸⁶Sr, δ¹⁸O, δ¹³C, Pb)", t:["Enamel"],
     stage:"Terminal",
     consumes:"Enamel powder dissolved — terminal for that aliquot",
@@ -432,15 +481,15 @@ const NODES = [
     constraint:"Lower spatial resolution than LA-ICP-MS. Useful for total metal burden or cross-validation. Terminal.",
     pairs:"Bulk isotopes enamel, enamel proteomics, LA-ICP-MS (spatial complement)",
     ref1:"Arora M et al. (2006). Spatial distribution of lead in human primary teeth as a biomarker of pre- and neonatal lead exposure. Sci Total Environ 371(1–3):55–62.",
-    ref2:"Friedman A et al. (2022). Multiple metals in children\\\'s deciduous teeth: community-initiated pilot study. J Expo Sci Environ Epidemiol 32:408–417.",
+    ref2:"Friedman A et al. (2022). Multiple metals in children\'s deciduous teeth: community-initiated pilot study. J Expo Sci Environ Epidemiol 32:408–417.",
     note:"Both papers directly use deciduous dentine for bulk and spatially resolved elemental analysis. Terminal for dissolved material." },
-  { id:"stable-isotope-microsampling", g:"Terminal", label:"Stable Isotope Microsampling — Dentin (Incremental)", t:["Dentin"],
+  { id:"stable-isotope-microsampling", g:"Terminal", label:"Stable Isotope Microsampling — Dentin", t:["Dentin"],
     stage:"Terminal",
     consumes:"Sampled dentin increments (demineralized)",
     preserves:"Other sections/portions",
     constraint:"Autofluorescence collagen screening strongly recommended before sampling. Histomorphometry used for spatial orientation of sampling transect. Incremental = high temporal resolution exposure record.",
     pairs:"Autofluorescence screening (before), histomorphometry (orientation), bulk isotopes dentin" },
-  { id:"bulk-isotopes-dentin", g:"Terminal", label:"Bulk Isotopes — Root Dentin (δ¹³C, δ¹⁵N, δ³⁴S collagen)", t:["Dentin"],
+  { id:"bulk-isotopes-dentin", g:"Terminal", label:"Bulk Isotopes — Root Dentin (δ¹³C, δ¹⁵N, δ³⁴S)", t:["Dentin"],
     stage:"Terminal",
     consumes:"Root dentin ~20–100 mg consumed",
     preserves:"Crown dentin, enamel",
@@ -453,7 +502,7 @@ const NODES = [
     constraint:"Terminal for dentin portion. Useful for total concentration cross-validation with LA-ICP-MS.",
     pairs:"Bulk isotopes dentin, LA-ICP-MS (cross-validation)",
     ref1:"Arora M et al. (2006). Spatial distribution of lead in human primary teeth as a biomarker of pre- and neonatal lead exposure. Sci Total Environ 371(1–3):55–62.",
-    ref2:"Friedman A et al. (2022). Multiple metals in children\\\'s deciduous teeth: community-initiated pilot study. J Expo Sci Environ Epidemiol 32:408–417.",
+    ref2:"Friedman A et al. (2022). Multiple metals in children\'s deciduous teeth: community-initiated pilot study. J Expo Sci Environ Epidemiol 32:408–417.",
     note:"Both papers directly use deciduous dentine for bulk and spatially resolved elemental analysis. Terminal for dissolved material." },
   { id:"adna-dentin", g:"Terminal", label:"Ancient / Modern DNA — Dentin", t:["Dentin"],
     stage:"Terminal",
@@ -482,7 +531,7 @@ const NODES = [
     ref1:"Weatherell JA et al. (1977). Distribution of fluoride in the human dentition. Caries Res 11(Suppl 1):100–127.",
     ref2:"Fejerskov O et al. (2008). Fluoride in Dentistry, 3rd ed. Blackwell Munksgaard.",
     note:"Classic method for bulk F in enamel/dentin via ion-selective electrode after dissolution. No recent deciduous-specific study found beyond classic literature." },
-  { id:"other-omics", g:"Terminal", label:"Other Omics (Metagenomics / Metabolomics / Epigenomics)", t:["Calculus","Pulp"],
+  { id:"other-omics", g:"Terminal", label:"Other Omics (Metagenomics / Metabolomics)", t:["Calculus","Pulp"],
     stage:"Terminal",
     consumes:"Material consumed in extraction",
     preserves:"Crown and other tissues",
@@ -500,63 +549,95 @@ const NODES = [
 ];
 
 // ─── EDGES ────────────────────────────────────────────────────────────────────
-// type: "Order" | "Incompat" | "Pair"
+// type: "Order" | "Incompat"  (Pair edges replaced by pipeline buttons)
 const EDGES = [
   // Ordering — calculus sampling before removal
-  { f:"calculus-proteomics",       t:"calculus-removal",              type:"Order", lbl:"sample → clean" },
-  { f:"calculus-microbiome",       t:"calculus-removal",              type:"Order", lbl:"sample → clean" },
-  { f:"calculus-dietary",          t:"calculus-removal",              type:"Order", lbl:"sample → clean" },
-  { f:"other-omics",               t:"calculus-removal",              type:"Order", lbl:"calculus omics first" },
+  { f:"calculus-proteomics",      t:"calculus-removal",             type:"Order",   lbl:"sample → clean" },
+  { f:"calculus-microbiome",      t:"calculus-removal",             type:"Order",   lbl:"sample → clean" },
+  { f:"calculus-dietary",         t:"calculus-removal",             type:"Order",   lbl:"sample → clean" },
+  { f:"other-omics",              t:"calculus-removal",             type:"Order",   lbl:"calculus omics first" },
   // aDNA/14C root before embedding
-  { f:"adna-root",                 t:"embedding",                     type:"Order", lbl:"NOWA: root before embed" },
+  { f:"adna-root",                t:"embedding",                    type:"Order",   lbl:"NOWA: root before embed" },
   // SXRF before LA-ICP-MS
-  { f:"sxrf",                      t:"la-icp-ms",                     type:"Order", lbl:"map → ablate" },
+  { f:"sxrf",                     t:"la-icp-ms",                    type:"Order",   lbl:"map → ablate" },
   // LA-ICP-MS before histomorphometry (NOWA)
-  { f:"la-icp-ms",                 t:"histomorphometry-enamel",       type:"Order", lbl:"NOWA: LA first (120–150µm) → grind to 100µm" },
-  { f:"la-icp-ms",                 t:"histomorphometry-dentin",       type:"Order", lbl:"NOWA: LA first" },
+  { f:"la-icp-ms",                t:"histomorphometry-enamel",      type:"Order",   lbl:"NOWA: LA first → grind" },
+  { f:"la-icp-ms",                t:"histomorphometry-dentin",      type:"Order",   lbl:"NOWA: LA first" },
   // Raman before coating
-  { f:"raman",                     t:"peem",                          type:"Order", lbl:"Raman before Pt/C coat" },
-  { f:"raman",                     t:"sem-bse",                       type:"Order", lbl:"Raman before C-coat" },
+  { f:"raman",                    t:"peem",                         type:"Order",   lbl:"Raman before Pt/C coat" },
+  { f:"raman",                    t:"sem-bse",                      type:"Order",   lbl:"Raman before C-coat" },
   // Nanoindentation before coating
-  { f:"nanoindentation",           t:"peem",                          type:"Order", lbl:"indent before coat" },
-  { f:"nanoindentation",           t:"ebsd",                          type:"Order", lbl:"indent before coat" },
+  { f:"nanoindentation",          t:"peem",                         type:"Order",   lbl:"indent before coat" },
+  { f:"nanoindentation",          t:"ebsd",                         type:"Order",   lbl:"indent before coat" },
   // Autofluorescence before isotope microsampling
-  { f:"autofluorescence-section",  t:"stable-isotope-microsampling",  type:"Order", lbl:"collagen screen first" },
-  { f:"autofluorescence-section",  t:"bulk-isotopes-dentin",          type:"Order", lbl:"collagen screen first" },
+  { f:"autofluorescence-section", t:"stable-isotope-microsampling", type:"Order",   lbl:"collagen screen first" },
+  { f:"autofluorescence-section", t:"bulk-isotopes-dentin",         type:"Order",   lbl:"collagen screen first" },
   // Histomorphometry guides microsampling
-  { f:"histomorphometry-dentin",   t:"stable-isotope-microsampling",  type:"Order", lbl:"orientation for sampling" },
+  { f:"histomorphometry-dentin",  t:"stable-isotope-microsampling", type:"Order",   lbl:"orientation for sampling" },
   // Micro-CT before sectioning
-  { f:"micro-ct",                  t:"la-icp-ms",                     type:"Order", lbl:"CT before sectioning" },
-  { f:"micro-ct",                  t:"histomorphometry-enamel",       type:"Order", lbl:"CT before sectioning" },
+  { f:"micro-ct",                 t:"la-icp-ms",                    type:"Order",   lbl:"CT before sectioning" },
+  { f:"micro-ct",                 t:"histomorphometry-enamel",      type:"Order",   lbl:"CT before sectioning" },
 
   // Incompatibilities
-  { f:"embedding",                 t:"sims",                          type:"Incompat", lbl:"⚠ Crystalbond dissolves in SIMS cleaning" },
-  { f:"formalin",                  t:"pulp-dna",                      type:"Incompat", lbl:"⚠ Formalin forecloses DNA" },
-  { f:"formalin",                  t:"adna-dentin",                   type:"Incompat", lbl:"⚠ Formalin forecloses DNA" },
-  { f:"formalin",                  t:"enamel-proteomics",             type:"Incompat", lbl:"⚠ Formalin forecloses proteomics" },
-  { f:"ethanol",                   t:"bulk-isotopes-dentin",          type:"Incompat", lbl:"⚠ Ethanol affects δ¹³C/δ¹⁵N" },
-  { f:"immunofluorescence",        t:"adna-dentin",                   type:"Incompat", lbl:"⚠ Aldehyde fixation forecloses DNA" },
-
-  // Good pairings
-  { f:"la-icp-ms",                 t:"bulk-icp-dentin",               type:"Pair", lbl:"cross-validate concentrations" },
-  { f:"bulk-isotopes-enamel",      t:"enamel-proteomics",             type:"Pair", lbl:"split same powder" },
-  { f:"bulk-isotopes-enamel",      t:"bulk-icp-enamel",               type:"Pair", lbl:"same portion" },
-  { f:"cementum-annulation",       t:"stable-isotopes-cementum",      type:"Pair", lbl:"same section/region" },
-  { f:"calculus-proteomics",       t:"calculus-microbiome",           type:"Pair", lbl:"split calculus aliquots" },
-  { f:"pulp-dna",                  t:"adna-dentin",                   type:"Pair", lbl:"complementary DNA sources" },
-  { f:"adna-root",                 t:"radiocarbon",                   type:"Pair", lbl:"same root portion" },
-  { f:"sem-bse",                   t:"sem-eds",                       type:"Pair", lbl:"same coating session" },
-  { f:"sem-bse",                   t:"epma",                          type:"Pair", lbl:"same coating session" },
-  { f:"sem-bse",                   t:"cathodoluminescence",           type:"Pair", lbl:"same coating session" },
+  { f:"embedding",                t:"sims",                         type:"Incompat", lbl:"⚠ Crystalbond dissolves in SIMS cleaning" },
+  { f:"formalin",                 t:"pulp-dna",                     type:"Incompat", lbl:"⚠ Formalin forecloses DNA" },
+  { f:"formalin",                 t:"adna-dentin",                  type:"Incompat", lbl:"⚠ Formalin forecloses DNA" },
+  { f:"formalin",                 t:"enamel-proteomics",            type:"Incompat", lbl:"⚠ Formalin forecloses proteomics" },
+  { f:"ethanol",                  t:"bulk-isotopes-dentin",         type:"Incompat", lbl:"⚠ Ethanol affects δ¹³C/δ¹⁵N" },
+  { f:"immunofluorescence",       t:"adna-dentin",                  type:"Incompat", lbl:"⚠ Aldehyde fixation forecloses DNA" },
 ];
+
+// ─── GRAPH HELPERS ────────────────────────────────────────────────────────────
+const nodeById = {};
+NODES.forEach(n => nodeById[n.id] = n);
+
+// Precompute Order adjacency
+const orderFrom = {}, orderTo = {};
+NODES.forEach(n => { orderFrom[n.id] = []; orderTo[n.id] = []; });
+EDGES.forEach(e => {
+  if (e.type === "Order") {
+    orderFrom[e.f].push(e.t);
+    orderTo[e.t].push(e.f);
+  }
+});
+
+function bfsReachable(startId, adj) {
+  const visited = new Set();
+  const queue = [startId];
+  while (queue.length) {
+    const curr = queue.shift();
+    for (const nxt of (adj[curr] || [])) {
+      if (!visited.has(nxt)) { visited.add(nxt); queue.push(nxt); }
+    }
+  }
+  return visited;
+}
+
+function computeNodeStates(selId) {
+  const upstream   = bfsReachable(selId, orderTo);
+  const downstream = bfsReachable(selId, orderFrom);
+  const incompat   = new Set();
+  EDGES.forEach(e => {
+    if (e.type === "Incompat") {
+      if (e.f === selId) incompat.add(e.t);
+      if (e.t === selId) incompat.add(e.f);
+    }
+  });
+  const states = {};
+  NODES.forEach(n => {
+    if (n.id === selId)         states[n.id] = "selected";
+    else if (incompat.has(n.id))states[n.id] = "incompat";
+    else if (upstream.has(n.id))states[n.id] = "upstream";
+    else if (downstream.has(n.id)) states[n.id] = "downstream";
+    else                        states[n.id] = "dim";
+  });
+  return states;
+}
 
 // ─── LAYOUT ───────────────────────────────────────────────────────────────────
 const GRP_ORDER = ["Storage","At Acquisition","Whole Tooth","Post-Sectioning","Terminal"];
 const COL_CX = { "Storage":120, "At Acquisition":380, "Whole Tooth":650, "Post-Sectioning":940, "Terminal":1230 };
 const NW = 210, NH = 40, VGAP = 7, START_Y = 80;
-
-const nodeById = {};
-NODES.forEach(n => nodeById[n.id] = n);
 
 function buildPositions(visibleIds) {
   const byGrp = {};
@@ -579,9 +660,6 @@ function svgH(pos) {
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────
 function render() {
-  const TISSUES = ["All","Enamel","Dentin","Calculus","Pulp","Cementum"];
-
-  // visible nodes
   const visNodes = S.tissue === "All"
     ? NODES
     : NODES.filter(n => n.t.includes(S.tissue) || n.t.includes("All"));
@@ -591,68 +669,96 @@ function render() {
   const H = svgH(pos);
   const W = 1490;
 
-  // ── EDGES SVG ──
+  const nodeStates   = S.sel      ? computeNodeStates(S.sel) : {};
+  const pipelineSet  = S.pipeline ? new Set(pipelineById[S.pipeline].nodes) : null;
+  const activePl     = S.pipeline ? pipelineById[S.pipeline] : null;
+
+  // ── EDGES ──
   let edgeSVG = "";
-  EDGES.forEach((e, i) => {
+  EDGES.forEach(e => {
     if (!visIds.has(e.f) || !visIds.has(e.t)) return;
-    const tkey = e.type === "Incompat" ? "Incompat" : e.type === "Pair" ? "Pair" : "Order";
-    if (!S["show"+tkey]) return;
     const pf = pos[e.f], pt = pos[e.t];
     if (!pf || !pt) return;
+
+    const connectedToSel = S.sel && (e.f === S.sel || e.t === S.sel);
+    let opacity = 0.10;
+    let sw = e.type === "Incompat" ? 1.8 : 1.4;
+
+    if (S.sel) {
+      if (connectedToSel) { opacity = 0.90; sw += 0.6; }
+      else                { opacity = 0.04; }
+    } else if (pipelineSet) {
+      if (pipelineSet.has(e.f) && pipelineSet.has(e.t)) opacity = 0.28;
+      else opacity = 0.03;
+    }
+
     const x1 = pf.x + NW/2, y1 = pf.y + NH/2;
     const x2 = pt.x - NW/2, y2 = pt.y + NH/2;
-    const cx = (x1 + x2) / 2;
-    const d = `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`;
-    const col = e.type === "Incompat" ? "#ef4444" : e.type === "Pair" ? "#10b981" : "#94a3b8";
-    const dash = e.type !== "Order" ? "stroke-dasharray='5,3'" : "";
-    const w = e.type === "Incompat" ? 2 : 1.5;
-    const hov = S.hovEdge === i;
-    const opacity = hov ? 1 : 0.65;
-    edgeSVG += `
-      <path d="${d}" stroke="${col}" stroke-width="${hov ? w+1 : w}" ${dash}
-        fill="none" marker-end="url(#arr-${e.type})"
-        style="cursor:pointer;opacity:${opacity}"
-        onmouseenter="hoverEdge(${i})" onmouseleave="clearHoverEdge()"
-      />`;
-    if (hov) {
-      const mx = (x1+x2)/2, my = Math.min(y1,y2) + Math.abs(y2-y1)/2;
-      edgeSVG += `<text x="${mx}" y="${my-6}" text-anchor="middle" font-size="8" fill="${col}" pointer-events="none"
-        style="background:white">${e.lbl}</text>`;
+    const cx = (x1+x2)/2;
+    const d  = `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`;
+    const col  = e.type === "Incompat" ? "#ef4444" : "#94a3b8";
+    const dash = e.type === "Incompat" ? "stroke-dasharray='5,3'" : "";
+    edgeSVG += `<path d="${d}" stroke="${col}" stroke-width="${sw}" ${dash} fill="none"
+      marker-end="url(#arr-${e.type})" style="opacity:${opacity};pointer-events:none"/>`;
+
+    // Label on highlighted edges
+    if (connectedToSel && opacity > 0.5) {
+      const mx = (x1+x2)/2, my = Math.min(y1,y2) + Math.abs(y2-y1)/2 - 5;
+      edgeSVG += `<text x="${mx}" y="${my}" text-anchor="middle" font-size="7.5" fill="${col}"
+        style="pointer-events:none;font-weight:600">${e.lbl}</text>`;
     }
   });
 
-  // ── COLUMN HEADERS & BACKGROUNDS ──
+  // ── COLUMN HEADERS ──
   let colSVG = "";
   GRP_ORDER.forEach(g => {
     const m = GM[g];
-    const cnt = visNodes.filter(n=>n.g===g).length;
+    const cnt = visNodes.filter(n => n.g === g).length;
+    const dimmed = (S.sel || S.pipeline) ? 0.65 : 1;
     colSVG += `
       <rect x="${COL_CX[g]-NW/2-8}" y="12" width="${NW+16}" height="${H-22}" rx="8" fill="${m.hdr}" opacity="0.04"/>
-      <rect x="${COL_CX[g]-NW/2-6}" y="18" width="${NW+12}" height="28" rx="6" fill="${m.hdr}" opacity="0.88"/>
+      <rect x="${COL_CX[g]-NW/2-6}" y="18" width="${NW+12}" height="28" rx="6" fill="${m.hdr}" opacity="${0.88*dimmed}"/>
       <text x="${COL_CX[g]}" y="37" text-anchor="middle" font-size="9.5" font-weight="700" fill="white"
-        letter-spacing="0.05em">${g.toUpperCase()} (${cnt})</text>`;
+        opacity="${dimmed}" letter-spacing="0.05em">${g.toUpperCase()} (${cnt})</text>`;
   });
 
-  // ── NODES SVG ──
-  let nodeSVG = "";
+  // ── NODES ──
   const dotC = {"All":"#94a3b8","Enamel":"#a78bfa","Dentin":"#fb923c","Calculus":"#84cc16","Pulp":"#ec4899","Cementum":"#38bdf8","Root":"#fdba74"};
+  let nodeSVG = "";
+
   visNodes.forEach(n => {
     const p = pos[n.id];
     if (!p) return;
     const m = GM[n.g];
-    const isSel = S.sel === n.id;
     const lx = p.x - NW/2, ly = p.y;
-    const rawLabel = n.label;
-    const short = rawLabel.length > 34 ? rawLabel.slice(0,32)+"…" : rawLabel;
+    const short = n.label.length > 34 ? n.label.slice(0,32)+"…" : n.label;
+
+    let fill = m.fill, stroke = m.stroke, strokeW = 1.1, groupOpacity = 1;
+
+    if (S.sel) {
+      const st = nodeStates[n.id] || "dim";
+      if      (st === "selected")   { stroke = "#f59e0b";  strokeW = 2.8; }
+      else if (st === "upstream")   { fill = "#dbeafe"; stroke = "#2563eb"; strokeW = 2.2; }
+      else if (st === "downstream") { fill = "#dcfce7"; stroke = "#059669"; strokeW = 2.2; }
+      else if (st === "incompat")   { fill = "#fee2e2"; stroke = "#dc2626"; strokeW = 1.8; groupOpacity = 0.38; }
+      else /* available, no constraint */ { fill = m.fill; stroke = "#cbd5e1"; strokeW = 0.8; groupOpacity = 0.62; }
+    } else if (pipelineSet) {
+      if (pipelineSet.has(n.id)) {
+        stroke = activePl.color; strokeW = 2.5;
+      } else {
+        groupOpacity = 0.15;
+      }
+    }
+
     let dots = "";
-    n.t.forEach((t,ti) => {
+    n.t.forEach((t, ti) => {
       dots += `<circle cx="${lx+NW-12-ti*11}" cy="${ly+NH/2}" r="4" fill="${dotC[t]||'#94a3b8'}" opacity="0.9" pointer-events="none"/>`;
     });
+
     nodeSVG += `
-      <g onclick="selectNode('${n.id}')" style="cursor:pointer">
+      <g class="node-g" onclick="selectNode('${n.id}')" style="opacity:${groupOpacity}">
         <rect class="node-rect" x="${lx}" y="${ly}" width="${NW}" height="${NH}" rx="5"
-          fill="${m.fill}" stroke="${isSel ? '#f59e0b' : m.stroke}"
-          stroke-width="${isSel ? 2.5 : 1.1}"/>
+          fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"/>
         <text x="${lx+7}" y="${ly+14}" font-size="7.5" font-weight="700" fill="${m.text}" pointer-events="none">${n.g.toUpperCase()}</text>
         <text x="${lx+7}" y="${ly+27}" font-size="9.5" fill="#1e293b" pointer-events="none">${short}</text>
         ${dots}
@@ -661,6 +767,7 @@ function render() {
 
   // ── DETAILS PANEL ──
   let detailsHTML = "";
+
   if (S.sel && nodeById[S.sel]) {
     const n = nodeById[S.sel];
     const m = GM[n.g];
@@ -668,8 +775,39 @@ function render() {
       const tm = TM[t] || TM["All"];
       return `<span class="d-tissue" style="background:${tm.fill};color:${tm.stroke};border:1px solid ${tm.stroke}">${t}</span>`;
     }).join("");
+
     const isDanger = n.constraint && (n.constraint.includes("⚠") || n.constraint.toLowerCase().includes("forecloses all"));
     const constraintClass = isDanger ? "d-box d-box-danger" : "d-box d-box-warn";
+
+    // Computed relationships
+    const immUp   = (orderTo[n.id]   || []).filter(id => nodeById[id]).map(id => nodeById[id].label);
+    const immDown = (orderFrom[n.id] || []).filter(id => nodeById[id]).map(id => nodeById[id].label);
+    const incompatList = [];
+    EDGES.forEach(e => {
+      if (e.type === "Incompat") {
+        if (e.f === n.id && nodeById[e.t]) incompatList.push(nodeById[e.t].label);
+        if (e.t === n.id && nodeById[e.f]) incompatList.push(nodeById[e.f].label);
+      }
+    });
+
+    const upSec = immUp.length ? `
+      <div class="d-section">
+        <div class="d-section-title" style="color:#2563eb">⬆ Must happen first</div>
+        <div class="d-box d-box-blue">${immUp.map(l => `• ${l}`).join("<br>")}</div>
+      </div>` : "";
+
+    const downSec = immDown.length ? `
+      <div class="d-section">
+        <div class="d-section-title" style="color:#059669">⬇ Unlocks downstream</div>
+        <div class="d-box d-box-green">${immDown.map(l => `• ${l}`).join("<br>")}</div>
+      </div>` : "";
+
+    const incompatSec = incompatList.length ? `
+      <div class="d-section">
+        <div class="d-section-title" style="color:#dc2626">⛔ Incompatible with</div>
+        <div class="d-box d-box-red">${incompatList.map(l => `• ${l}`).join("<br>")}</div>
+      </div>` : "";
+
     detailsHTML = `<div class="details-inner">
       <span class="d-badge" style="background:${m.fill};color:${m.text};border:1px solid ${m.stroke}">${n.g}</span>
       <div class="d-title">${n.label}</div>
@@ -688,37 +826,76 @@ function render() {
         <div class="d-section-title">Key Ordering Constraint</div>
         <div class="${constraintClass}">${n.constraint}</div>
       </div>
-      <div class="d-section">
-        <div class="d-section-title">Good Pairings / Collaborations</div>
-        <div class="d-box d-box-green">${n.pairs}</div>
-      </div>
+      ${upSec}${downSec}${incompatSec}
       ${n.ref1 ? `<hr class="d-divider">
       <div class="d-section">
         <div class="d-section-title">References</div>
         <div class="d-ref"><span class="d-ref-num">1</span>${n.ref1}</div>
-        ${n.ref2 ? `<div class="d-ref"><span class="d-ref-num">2</span>${n.ref2}</div>` : ''}
+        ${n.ref2 ? `<div class="d-ref"><span class="d-ref-num">2</span>${n.ref2}</div>` : ""}
       </div>
       ${n.note ? `<div class="d-section">
         <div class="d-section-title">Deciduous Note</div>
         <div class="d-box d-box-blue">${n.note}</div>
-      </div>` : ''}` : ''}
+      </div>` : ""}` : ""}
     </div>`;
+
+  } else if (activePl) {
+    const plNodes = activePl.nodes.map(id => nodeById[id]).filter(Boolean);
+    const byStage = {};
+    GRP_ORDER.forEach(g => byStage[g] = []);
+    plNodes.forEach(n => { if (byStage[n.g]) byStage[n.g].push(n); });
+
+    const stageRows = GRP_ORDER.map(g => {
+      const ns = byStage[g];
+      if (!ns.length) return "";
+      const m = GM[g];
+      return `<div class="d-section">
+        <div class="d-section-title" style="color:${m.hdr}">${g}</div>
+        ${ns.map(n => `<div class="pl-node-link" onclick="selectNode('${n.id}')">• ${n.label}</div>`).join("")}
+      </div>`;
+    }).join("");
+
+    detailsHTML = `<div class="details-inner">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="width:11px;height:11px;border-radius:50%;background:${activePl.color};flex-shrink:0"></div>
+        <div style="font-size:13px;font-weight:700;line-height:1.3">${activePl.label}</div>
+      </div>
+      <div style="font-size:11px;color:#475569;line-height:1.55;margin-bottom:12px">${activePl.desc}</div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">${activePl.nodes.length} assays — click any to see details</div>
+      <hr class="d-divider">
+      ${stageRows}
+    </div>`;
+
   } else {
-    detailsHTML = `<div class="details-empty">Click any node to see ordering constraints, tissue details, and good collaboration pairings.</div>`;
+    detailsHTML = `<div class="details-empty">
+      <div>
+        <div style="margin-bottom:10px">Click any assay node to see its upstream dependencies, downstream unlocks, and incompatibilities highlighted in the graph.</div>
+        <div class="key-hint" style="justify-content:center">
+          <span><span class="key-dot" style="background:#2563eb"></span>Must happen first</span>
+          <span><span class="key-dot" style="background:#059669"></span>Unlocked downstream</span>
+          <span><span class="key-dot" style="background:#dc2626"></span>Incompatible</span>
+          <span><span class="key-dot" style="background:#cbd5e1"></span>Still available</span>
+        </div>
+        <div style="margin-top:12px;font-size:10px;color:#94a3b8">Or select a Pipeline above to highlight a curated multi-assay workflow.</div>
+      </div>
+    </div>`;
   }
 
-  // ── FILTER BUTTONS ──
+  // ── TISSUE FILTER BUTTONS ──
   const tBtns = ["All","Enamel","Dentin","Calculus","Pulp","Cementum"].map(t =>
-    `<button class="filter-btn ${S.tissue===t?'active':''}" onclick="setTissue('${t}')">${t}</button>`
+    `<button class="filter-btn ${S.tissue===t?"active":""}" onclick="setTissue('${t}')">${t}</button>`
   ).join("");
 
-  const eBtns = [
-    { key:"Order",   lbl:"Ordering",         cls:"active-gray" },
-    { key:"Incompat",lbl:"Incompatibilities", cls:"active-red" },
-    { key:"Pair",    lbl:"Good pairings",     cls:"active-green" },
-  ].map(e =>
-    `<button class="filter-btn ${S['show'+e.key] ? e.cls : ''}" onclick="toggleEdge('${e.key}')">${e.lbl}</button>`
-  ).join("");
+  // ── PIPELINE BUTTONS ──
+  const pBtns = PIPELINES.map(pl => {
+    const active = S.pipeline === pl.id;
+    const style = active
+      ? `border-color:${pl.color};background:${pl.color}26;color:${pl.color}`
+      : `border-color:${pl.color}44;color:#6b7280`;
+    return `<button class="pipeline-btn" style="${style}" onclick="selectPipeline('${pl.id}')">
+      <span style="width:7px;height:7px;border-radius:50%;background:${pl.color};flex-shrink:0;display:inline-block"></span>${pl.label}
+    </button>`;
+  }).join("");
 
   // ── LEGEND ──
   const grpLeg = GRP_ORDER.map(g => {
@@ -733,21 +910,24 @@ function render() {
   // ── ASSEMBLE ──
   document.getElementById("app").innerHTML = `
     <div class="header">
-      <div>
-        <div class="header-title">Deciduous Tooth Assay Workflow DAG</div>
-        <div class="header-sub">ECHO Workshop · Maximizing the Potential of Shed Teeth · April 22, 2026</div>
+      <div class="header-row1">
+        <div>
+          <div class="header-title">Deciduous Tooth Assay Workflow DAG</div>
+          <div class="header-sub">ECHO Workshop · Maximizing the Potential of Shed Teeth · April 22, 2026</div>
+        </div>
+        <div class="filters"><span class="filter-label">TISSUE:</span>${tBtns}</div>
+        <div class="legend">${grpLeg}&nbsp;&nbsp;${tisLeg}</div>
       </div>
-      <div class="filters"><span class="filter-label">TISSUE:</span>${tBtns}</div>
-      <div class="filters"><span class="filter-label">EDGES:</span>${eBtns}</div>
-      <div class="legend">${grpLeg}&nbsp;&nbsp;${tisLeg}</div>
+      <div class="header-row2">
+        <span class="filter-label">PIPELINES:</span>${pBtns}
+      </div>
     </div>
     <div class="main">
       <div class="dag-wrap">
         <svg class="dag-svg" width="${W}" height="${H}">
           <defs>
-            <marker id="arr-Order"   markerWidth="7" markerHeight="7" refX="6" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#94a3b8"/></marker>
+            <marker id="arr-Order"    markerWidth="7" markerHeight="7" refX="6" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#94a3b8"/></marker>
             <marker id="arr-Incompat" markerWidth="7" markerHeight="7" refX="6" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#ef4444"/></marker>
-            <marker id="arr-Pair"    markerWidth="7" markerHeight="7" refX="6" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#10b981"/></marker>
           </defs>
           ${colSVG}
           <g id="edges">${edgeSVG}</g>
